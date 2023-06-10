@@ -21,8 +21,6 @@ pub trait CommandHandler {
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
 pub struct Cli {
-    name: Option<String>,
-
     #[command(subcommand)]
     pub command: Commands,
 
