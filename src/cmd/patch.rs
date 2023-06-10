@@ -1,10 +1,10 @@
 use async_trait::async_trait;
 use clap::Parser;
 
-use crate::{http::HttpClient, logger};
+use crate::http::HttpClient;
 
 use super::{
-    shared::{BodyConfigArgs, ConfigHttpClient, HeaderConfigArgs},
+    shared::{BodyConfigArgs, ConfigHttpClient, HeaderConfigArgs, HttpClientRunner},
     CommandHandler,
 };
 
@@ -19,6 +19,8 @@ pub struct PatchCommandHandler {
     body_config: BodyConfigArgs,
 }
 
+impl HttpClientRunner for PatchCommandHandler {}
+
 #[async_trait]
 impl CommandHandler for PatchCommandHandler {
     async fn handle(&self) -> Result<(), anyhow::Error> {
@@ -27,11 +29,6 @@ impl CommandHandler for PatchCommandHandler {
         client = self.header_config.config_http_client(client)?;
         client = self.body_config.config_http_client(client)?;
 
-        let (req, res) = client.send().await?;
-
-        logger::log_request(req, self.header_config.verbose)?;
-        logger::log_response(res, self.header_config.verbose).await?;
-
-        Ok(())
+        Self::run_http_client(client, self.header_config.verbose).await
     }
 }

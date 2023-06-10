@@ -1,9 +1,22 @@
 use std::time::Duration;
 
 use anyhow::anyhow;
+use async_trait::async_trait;
 use clap::Args;
 
-use crate::http::HttpClient;
+use crate::{http::HttpClient, logger};
+
+#[async_trait]
+pub trait HttpClientRunner {
+    async fn run_http_client(client: HttpClient, verbose: bool) -> Result<(), anyhow::Error> {
+        let (req, res) = client.send().await?;
+
+        logger::log_request(req, verbose)?;
+        logger::log_response(res, verbose).await?;
+
+        Ok(())
+    }
+}
 
 pub trait ConfigHttpClient {
     fn config_http_client(&self, client: HttpClient) -> Result<HttpClient, anyhow::Error>;
