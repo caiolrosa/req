@@ -10,6 +10,7 @@ use super::{
 };
 
 #[derive(Parser)]
+#[command(about = "Executes a patch request")]
 pub struct PatchCommandHandler {
     url: String,
 

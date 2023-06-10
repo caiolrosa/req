@@ -10,6 +10,7 @@ use super::{
 };
 
 #[derive(Parser)]
+#[command(about = "Executes a put request")]
 pub struct PutCommandHandler {
     url: String,
 

@@ -10,6 +10,7 @@ use super::{
 };
 
 #[derive(Parser)]
+#[command(about = "Executes a delete request")]
 pub struct DeleteCommandHandler {
     url: String,
 

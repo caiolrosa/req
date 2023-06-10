@@ -25,7 +25,7 @@ pub struct Cli {
     #[command(subcommand)]
     pub command: Commands,
 
-    #[arg(global = true, short, long)]
+    #[arg(global = true, short, long, help = "Print extra information")]
     pub verbose: bool,
 }
 

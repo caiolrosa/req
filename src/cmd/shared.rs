@@ -24,16 +24,16 @@ pub trait ConfigHttpClient {
 
 #[derive(Args)]
 pub struct HeaderConfigArgs {
-    #[arg(short = 'H', long = "header", action = clap::ArgAction::Append)]
+    #[arg(short = 'H', long = "header", help = "Example: Header", action = clap::ArgAction::Append)]
     headers: Vec<String>,
 
-    #[arg(short = 'T', long)]
+    #[arg(short = 'T', long, help = "Timeout in seconds")]
     timeout: Option<u8>,
 
-    #[arg(long)]
+    #[arg(long, help = "Token")]
     bearer: Option<String>,
 
-    #[arg(long)]
+    #[arg(long, help = "User:Password or just user")]
     basic: Option<String>,
 
     #[arg(from_global)]
@@ -66,10 +66,13 @@ impl ConfigHttpClient for HeaderConfigArgs {
 
 #[derive(Args)]
 pub struct BodyConfigArgs {
-    #[arg(long)]
+    #[arg(
+        long,
+        help = "Json formatted body '{ \"example\": { \"request\": \"body\" } }'"
+    )]
     json: Option<String>,
 
-    #[arg(long)]
+    #[arg(long, help = "Url form encoded data 'example=data&url=encoded'")]
     data: Option<String>,
 }
 
