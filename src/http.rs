@@ -65,7 +65,7 @@ impl HttpClient {
 
     pub fn with_header_from_str(mut self, header: &str) -> Result<Self, anyhow::Error> {
         let header: String = header.chars().filter(|c| !c.is_whitespace()).collect();
-        let header: Vec<_> = header.split(":").collect();
+        let header: Vec<_> = header.split(':').collect();
 
         let (k, v) = match (header.first(), header.get(1)) {
             (Some(k), Some(v)) => (k.to_string(), v.to_string()),
@@ -85,7 +85,7 @@ impl HttpClient {
 
     pub fn with_basic_auth(mut self, credential: &str) -> Result<Self, anyhow::Error> {
         let credential: String = credential.chars().filter(|c| !c.is_whitespace()).collect();
-        let credential: Vec<_> = credential.split(":").collect();
+        let credential: Vec<_> = credential.split(':').collect();
 
         let (user, pass) = match (credential.first(), credential.get(1)) {
             (Some(user), Some(pass)) => (user.to_string(), Some(pass.to_string())),
