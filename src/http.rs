@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 use reqwest::{Client, Request, RequestBuilder, Response};
 
 pub struct HttpClient {
@@ -52,7 +52,7 @@ impl HttpClient {
         let res = Client::new()
             .execute(req)
             .await
-            .map_err(|err| anyhow!(err))?;
+            .context("Failed to execute request")?;
 
         Ok((cloned_req, res))
     }
