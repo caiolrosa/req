@@ -1,12 +1,13 @@
 use std::collections::HashMap;
 
+use anyhow::Result;
 use colored_json::ToColoredJson;
 use reqwest::{
     header::{HeaderMap, HeaderValue},
     Request, Response,
 };
 
-fn log_headers(headers: &HeaderMap<HeaderValue>) -> Result<(), anyhow::Error> {
+fn log_headers(headers: &HeaderMap<HeaderValue>) -> Result<()> {
     let mut header_map = HashMap::<&str, &str>::new();
 
     for (k, v) in headers {
@@ -20,7 +21,7 @@ fn log_headers(headers: &HeaderMap<HeaderValue>) -> Result<(), anyhow::Error> {
     Ok(())
 }
 
-pub fn log_request(req: Request, verbose: bool) -> Result<(), anyhow::Error> {
+pub fn log_request(req: Request, verbose: bool) -> Result<()> {
     if !verbose {
         return Ok(());
     }
@@ -30,7 +31,7 @@ pub fn log_request(req: Request, verbose: bool) -> Result<(), anyhow::Error> {
     log_headers(req.headers())
 }
 
-pub async fn log_response(res: Response, verbose: bool) -> Result<(), anyhow::Error> {
+pub async fn log_response(res: Response, verbose: bool) -> Result<()> {
     if verbose {
         println!("Response Status: {:?}", res.status());
         println!("Response Headers:");

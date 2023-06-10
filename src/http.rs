@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use anyhow::anyhow;
+use anyhow::{anyhow, Result};
 use reqwest::{Client, Request, RequestBuilder, Response};
 
 pub struct HttpClient {
@@ -44,7 +44,7 @@ impl HttpClient {
         Self::with_defaults(builder)
     }
 
-    pub async fn send(self) -> Result<(Request, Response), anyhow::Error> {
+    pub async fn send(self) -> Result<(Request, Response)> {
         let req = self.req.build()?;
         let cloned_req = req
             .try_clone()
@@ -63,7 +63,7 @@ impl HttpClient {
         self
     }
 
-    pub fn with_header_from_str(mut self, header: &str) -> Result<Self, anyhow::Error> {
+    pub fn with_header_from_str(mut self, header: &str) -> Result<Self> {
         let header: String = header.chars().filter(|c| !c.is_whitespace()).collect();
         let header: Vec<_> = header.split(':').collect();
 
@@ -83,7 +83,7 @@ impl HttpClient {
         self
     }
 
-    pub fn with_basic_auth(mut self, credential: &str) -> Result<Self, anyhow::Error> {
+    pub fn with_basic_auth(mut self, credential: &str) -> Result<Self> {
         let credential: String = credential.chars().filter(|c| !c.is_whitespace()).collect();
         let credential: Vec<_> = credential.split(':').collect();
 
