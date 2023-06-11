@@ -3,7 +3,7 @@ use clap::{Parser, Subcommand};
 
 use self::{
     delete::DeleteCommandHandler, get::GetCommandHandler, patch::PatchCommandHandler,
-    post::PostCommandHandler, put::PutCommandHandler,
+    post::PostCommandHandler, put::PutCommandHandler, template::TemplateCommandHandler,
 };
 use anyhow::Result;
 
@@ -13,6 +13,7 @@ mod patch;
 mod post;
 mod put;
 mod shared;
+mod template;
 
 #[async_trait]
 pub trait CommandHandler {
@@ -36,4 +37,5 @@ pub enum Commands {
     Put(PutCommandHandler),
     Patch(PatchCommandHandler),
     Delete(DeleteCommandHandler),
+    Template(TemplateCommandHandler),
 }

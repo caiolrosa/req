@@ -4,6 +4,7 @@ use cmd::{Cli, CommandHandler, Commands};
 mod cmd;
 mod http;
 mod logger;
+mod template;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -15,6 +16,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Commands::Put(handler) => handler.handle().await?,
         Commands::Patch(handler) => handler.handle().await?,
         Commands::Delete(handler) => handler.handle().await?,
+        Commands::Template(handler) => handler.handle().await?,
     };
 
     Ok(())
