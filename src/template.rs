@@ -1,6 +1,6 @@
 use std::{
     collections::HashMap,
-    fs::{self, OpenOptions},
+    fs::{self, read_to_string, OpenOptions},
     io::Write,
     path::PathBuf,
 };
@@ -10,12 +10,17 @@ use dialoguer::Editor;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
-pub struct Template {
-    pub name: String,
-    pub project: String,
+pub struct TemplateRequest {
     pub method: String,
     pub headers: HashMap<String, String>,
     pub body: Option<serde_json::Value>,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct Template {
+    pub name: String,
+    pub project: String,
+    pub request: TemplateRequest,
 }
 
 impl Template {
@@ -32,9 +37,11 @@ impl Template {
         Self {
             name,
             project,
-            method,
-            headers: HashMap::new(),
-            body: None,
+            request: TemplateRequest {
+                method,
+                headers: HashMap::default(),
+                body: None,
+            },
         }
     }
 
@@ -56,6 +63,28 @@ impl Template {
         Ok(projects)
     }
 
+    pub fn list_templates(project: &str) -> Result<Vec<String>> {
+        let project_path = Template::templates_path()?.join(project);
+
+        let templates: Vec<String> = fs::read_dir(project_path)?
+            .flatten()
+            .filter(|entry| entry.path().is_file())
+            .flat_map(|file| file.file_name().into_string())
+            .flat_map(|name| name.split_once('.').map(|(name, _)| name.to_string()))
+            .collect();
+
+        Ok(templates)
+    }
+
+    pub fn from_file(project: &str, name: &str) -> Result<Self> {
+        let template_path = Template::templates_path()?
+            .join(project)
+            .join(format!("{name}.json"));
+        let json = read_to_string(template_path)?;
+
+        Ok(serde_json::from_str(&json)?)
+    }
+
     pub fn save(&self) -> Result<()> {
         let mut template_path = Self::templates_path()?.join(&self.project);
         fs::create_dir_all(&template_path)?;
@@ -74,14 +103,12 @@ impl Template {
     }
 
     pub fn edit(mut self) -> Result<Self> {
-        let json = serde_json::to_string_pretty(&self)?;
+        let json = serde_json::to_string_pretty(&self.request)?;
 
-        let self_edit = Editor::new().extension(".json").edit(&json)?;
-        let self_edit = self_edit.ok_or(anyhow!("Failed to edit template"))?;
+        let request_edit = Editor::new().extension(".json").edit(&json)?;
+        let request_edit = request_edit.ok_or(anyhow!("Failed to edit template"))?;
 
-        self = serde_json::from_str(&self_edit)?;
-
-        self.save()?;
+        self.request = serde_json::from_str(&request_edit)?;
 
         Ok(self)
     }
