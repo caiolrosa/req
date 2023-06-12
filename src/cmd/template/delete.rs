@@ -1,7 +1,7 @@
 use anyhow::Result;
 use async_trait::async_trait;
 use clap::Parser;
-use dialoguer::Confirm;
+use dialoguer::{theme::ColorfulTheme, Confirm};
 
 use crate::{cmd::CommandHandler, template::Template};
 
@@ -22,7 +22,7 @@ impl CommandHandler for DeleteCommandHandler {
     async fn handle(&self) -> Result<()> {
         let project_name = Self::select_project_name(false)?;
         if self.delete_project {
-            let should_delete = Confirm::new()
+            let should_delete = Confirm::with_theme(&ColorfulTheme::default())
                 .with_prompt(format!(
                     "The entire project [{}] will be deleted, do you wish to proceed?",
                     &project_name

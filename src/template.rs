@@ -119,6 +119,24 @@ impl Template {
             .context(format!("Failed to rename project {project}"))
     }
 
+    pub fn relocate(
+        project: &str,
+        new_project: &str,
+        template: &str,
+        new_template: &str,
+    ) -> Result<()> {
+        let template_path = Self::templates_path()?
+            .join(project)
+            .join(format!("{template}.json"));
+        let new_template_path = Self::templates_path()?
+            .join(new_project)
+            .join(format!("{new_template}.json"));
+
+        fs::rename(template_path, new_template_path).context(format!(
+            "Failed moving template from {project} to {new_project}"
+        ))
+    }
+
     pub fn save(&self) -> Result<()> {
         let mut template_path = Self::templates_path()?.join(&self.project);
         fs::create_dir_all(&template_path)?;

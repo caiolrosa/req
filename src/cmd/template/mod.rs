@@ -7,7 +7,7 @@ use crate::template::Template;
 
 use self::{
     create::CreateCommandHandler, delete::DeleteCommandHandler, edit::EditCommandHandler,
-    list::ListCommandHandler, rename::RenameCommandHandler,
+    list::ListCommandHandler, relocate::RelocateCommandHandler, rename::RenameCommandHandler,
 };
 
 use super::CommandHandler;
@@ -16,6 +16,7 @@ mod create;
 mod delete;
 mod edit;
 mod list;
+mod relocate;
 mod rename;
 
 #[derive(Parser)]
@@ -32,6 +33,7 @@ pub enum TemplateCommands {
     List(ListCommandHandler),
     Delete(DeleteCommandHandler),
     Rename(RenameCommandHandler),
+    Move(RelocateCommandHandler),
 }
 
 #[async_trait]
@@ -45,6 +47,7 @@ impl CommandHandler for TemplateCommandHandler {
             TemplateCommands::Edit(handler) => handler.handle().await,
             TemplateCommands::Delete(handler) => handler.handle().await,
             TemplateCommands::Rename(handler) => handler.handle().await,
+            TemplateCommands::Move(handler) => handler.handle().await,
         }
     }
 }
