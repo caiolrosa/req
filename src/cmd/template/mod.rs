@@ -5,12 +5,17 @@ use dialoguer::{theme::ColorfulTheme, FuzzySelect, Input};
 
 use crate::template::Template;
 
-use self::{create::CreateCommandHandler, edit::EditCommandHandler};
+use self::{
+    create::CreateCommandHandler, delete::DeleteCommandHandler, edit::EditCommandHandler,
+    list::ListCommandHandler,
+};
 
 use super::CommandHandler;
 
 mod create;
+mod delete;
 mod edit;
+mod list;
 
 #[derive(Parser)]
 #[command(about = "Manages request templates")]
@@ -23,6 +28,8 @@ pub struct TemplateCommandHandler {
 pub enum TemplateCommands {
     Create(CreateCommandHandler),
     Edit(EditCommandHandler),
+    List(ListCommandHandler),
+    Delete(DeleteCommandHandler),
 }
 
 #[async_trait]
@@ -31,8 +38,10 @@ impl CommandHandler for TemplateCommandHandler {
         Template::init_defaults()?;
 
         match &self.command {
+            TemplateCommands::List(handler) => handler.handle().await,
             TemplateCommands::Create(handler) => handler.handle().await,
             TemplateCommands::Edit(handler) => handler.handle().await,
+            TemplateCommands::Delete(handler) => handler.handle().await,
         }
     }
 }

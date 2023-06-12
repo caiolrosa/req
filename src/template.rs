@@ -85,6 +85,20 @@ impl Template {
         Ok(serde_json::from_str(&json)?)
     }
 
+    pub fn delete(project: &str, template: &str) -> Result<()> {
+        let template_path = Self::templates_path()?
+            .join(project)
+            .join(format!("{template}.json"));
+
+        fs::remove_file(template_path).context(format!("Failed to delete template {}", template))
+    }
+
+    pub fn delete_project(project: &str) -> Result<()> {
+        let project_path = Self::templates_path()?.join(project);
+
+        fs::remove_dir_all(project_path).context(format!("Failed to delete project {}", project))
+    }
+
     pub fn save(&self) -> Result<()> {
         let mut template_path = Self::templates_path()?.join(&self.project);
         fs::create_dir_all(&template_path)?;
