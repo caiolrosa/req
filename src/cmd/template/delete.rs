@@ -8,7 +8,7 @@ use crate::{cmd::CommandHandler, template::Template};
 use super::{ProjectSelector, TemplateSelector};
 
 #[derive(Parser)]
-#[command(about = "Delete request template")]
+#[command(about = "Delete request template or project")]
 pub struct DeleteCommandHandler {
     #[arg(long = "project", help = "Delete an entire project")]
     delete_project: bool,

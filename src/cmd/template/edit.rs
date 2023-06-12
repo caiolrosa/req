@@ -7,7 +7,7 @@ use crate::{cmd::CommandHandler, template::Template};
 use super::{ProjectSelector, TemplateSelector};
 
 #[derive(Parser)]
-#[command(about = "Edit a template request")]
+#[command(about = "Edit a request template")]
 pub struct EditCommandHandler;
 
 impl ProjectSelector for EditCommandHandler {}

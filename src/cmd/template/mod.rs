@@ -7,7 +7,7 @@ use crate::template::Template;
 
 use self::{
     create::CreateCommandHandler, delete::DeleteCommandHandler, edit::EditCommandHandler,
-    list::ListCommandHandler,
+    list::ListCommandHandler, rename::RenameCommandHandler,
 };
 
 use super::CommandHandler;
@@ -16,6 +16,7 @@ mod create;
 mod delete;
 mod edit;
 mod list;
+mod rename;
 
 #[derive(Parser)]
 #[command(about = "Manages request templates")]
@@ -30,6 +31,7 @@ pub enum TemplateCommands {
     Edit(EditCommandHandler),
     List(ListCommandHandler),
     Delete(DeleteCommandHandler),
+    Rename(RenameCommandHandler),
 }
 
 #[async_trait]
@@ -42,6 +44,7 @@ impl CommandHandler for TemplateCommandHandler {
             TemplateCommands::Create(handler) => handler.handle().await,
             TemplateCommands::Edit(handler) => handler.handle().await,
             TemplateCommands::Delete(handler) => handler.handle().await,
+            TemplateCommands::Rename(handler) => handler.handle().await,
         }
     }
 }
@@ -84,7 +87,7 @@ trait TemplateSelector {
     fn select_template_name(project: &str) -> Result<String> {
         let theme = ColorfulTheme::default();
 
-        let templates = Template::list_templates(project)?;
+        let templates = Template::list(project)?;
         if templates.is_empty() {
             return Err(anyhow!("There are no available templates"));
         }

@@ -28,9 +28,9 @@ impl Template {
         #[allow(deprecated)] // This only runs on linux for now, some $HOME will work
         let home_dir = std::env::home_dir().ok_or(anyhow!("Unable to find home directory"))?;
 
-        let default_template_path = home_dir.join(".config").join("req").join("templates");
+        let default_templates_path = home_dir.join(".config").join("req").join("templates");
 
-        Ok(default_template_path)
+        Ok(default_templates_path)
     }
 
     pub fn new(name: String, project: String, method: String) -> Self {
@@ -46,9 +46,9 @@ impl Template {
     }
 
     pub fn init_defaults() -> Result<()> {
-        let default_template_path = Template::templates_path()?.join("default");
+        let default_templates_path = Template::templates_path()?.join("default");
 
-        fs::create_dir_all(default_template_path).context("Failed creating default template path")
+        fs::create_dir_all(default_templates_path).context("Failed creating default template path")
     }
 
     pub fn list_projects() -> Result<Vec<String>> {
@@ -63,7 +63,7 @@ impl Template {
         Ok(projects)
     }
 
-    pub fn list_templates(project: &str) -> Result<Vec<String>> {
+    pub fn list(project: &str) -> Result<Vec<String>> {
         let project_path = Template::templates_path()?.join(project);
 
         let templates: Vec<String> = fs::read_dir(project_path)?
@@ -76,10 +76,10 @@ impl Template {
         Ok(templates)
     }
 
-    pub fn from_file(project: &str, name: &str) -> Result<Self> {
+    pub fn from_file(project: &str, template: &str) -> Result<Self> {
         let template_path = Template::templates_path()?
             .join(project)
-            .join(format!("{name}.json"));
+            .join(format!("{template}.json"));
         let json = read_to_string(template_path)?;
 
         Ok(serde_json::from_str(&json)?)
@@ -90,13 +90,33 @@ impl Template {
             .join(project)
             .join(format!("{template}.json"));
 
-        fs::remove_file(template_path).context(format!("Failed to delete template {}", template))
+        fs::remove_file(template_path).context(format!("Failed to delete template {template}"))
     }
 
     pub fn delete_project(project: &str) -> Result<()> {
         let project_path = Self::templates_path()?.join(project);
 
-        fs::remove_dir_all(project_path).context(format!("Failed to delete project {}", project))
+        fs::remove_dir_all(project_path).context(format!("Failed to delete project {project}"))
+    }
+
+    pub fn rename(project: &str, template: &str, new_template: &str) -> Result<()> {
+        let template_path = Self::templates_path()?
+            .join(project)
+            .join(format!("{template}.json"));
+        let new_template_path = Self::templates_path()?
+            .join(project)
+            .join(format!("{new_template}.json"));
+
+        fs::rename(template_path, new_template_path)
+            .context(format!("Failed to rename template {template}"))
+    }
+
+    pub fn rename_project(project: &str, new_project: &str) -> Result<()> {
+        let project_path = Self::templates_path()?.join(project);
+        let new_project_path = Self::templates_path()?.join(new_project);
+
+        fs::rename(project_path, new_project_path)
+            .context(format!("Failed to rename project {project}"))
     }
 
     pub fn save(&self) -> Result<()> {

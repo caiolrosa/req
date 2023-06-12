@@ -9,7 +9,7 @@ use crate::{cmd::CommandHandler, template::Template};
 use super::ProjectSelector;
 
 #[derive(Parser)]
-#[command(about = "Create a template request")]
+#[command(about = "Create a request template")]
 pub struct CreateCommandHandler;
 
 impl ProjectSelector for CreateCommandHandler {}

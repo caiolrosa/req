@@ -16,10 +16,10 @@ impl ProjectSelector for ListCommandHandler {}
 impl CommandHandler for ListCommandHandler {
     async fn handle(&self) -> Result<()> {
         let project_name = Self::select_project_name(false)?;
-        let templates = Template::list_templates(&project_name)?;
+        let templates = Template::list(&project_name)?;
 
         for template in templates {
-            println!("{}", template)
+            println!("{template}")
         }
 
         Ok(())
