@@ -11,6 +11,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
 pub struct TemplateRequest {
+    pub url: String,
     pub method: String,
     pub headers: HashMap<String, String>,
     pub body: Option<serde_json::Value>,
@@ -33,11 +34,12 @@ impl Template {
         Ok(default_templates_path)
     }
 
-    pub fn new(name: String, project: String, method: String) -> Self {
+    pub fn new(name: String, project: String, url: String, method: String) -> Self {
         Self {
             name,
             project,
             request: TemplateRequest {
+                url,
                 method,
                 headers: HashMap::default(),
                 body: None,

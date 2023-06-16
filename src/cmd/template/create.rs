@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 use async_trait::async_trait;
 use clap::Parser;
 use dialoguer::{theme::ColorfulTheme, FuzzySelect, Input};
@@ -48,9 +48,14 @@ impl CommandHandler for CreateCommandHandler {
             .with_prompt("Template name")
             .interact_text()?;
 
+        let request_url: String = Input::with_theme(&theme)
+            .with_prompt("Request url")
+            .interact_text()?;
+
         let request_method = Self::select_request_method()?;
 
-        let template = Template::new(template_name, project_name, request_method).edit()?;
+        let template =
+            Template::new(template_name, project_name, request_url, request_method).edit()?;
         template.save()?;
 
         println!(
