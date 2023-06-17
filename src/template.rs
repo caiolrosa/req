@@ -9,10 +9,12 @@ use dialoguer::Editor;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+use crate::http::Method;
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TemplateRequest {
     pub url: String,
-    pub method: String,
+    pub method: Method,
     pub headers: HashMap<String, String>,
     pub body: Option<serde_json::Value>,
 }
@@ -34,7 +36,7 @@ impl Template {
         Ok(default_templates_path)
     }
 
-    pub fn new(name: String, project: String, url: String, method: String) -> Self {
+    pub fn new(name: String, project: String, url: String, method: Method) -> Self {
         Self {
             name,
             project,

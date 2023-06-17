@@ -1,8 +1,12 @@
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use async_trait::async_trait;
 use clap::Parser;
 
-use crate::{cmd::CommandHandler, http::HttpClient, template::Template};
+use crate::{
+    cmd::CommandHandler,
+    http::{HttpClient, Method},
+    template::Template,
+};
 
 use super::{
     shared::{HeaderConfigArgs, HttpClientRunner},
@@ -28,16 +32,15 @@ impl CommandHandler for RunCommandHandler {
 
         let template = Template::from_file(&project_name, &template_name)?.edit()?;
 
-        let mut client = match template.request.method.as_str() {
-            "GET" => HttpClient::get(&template.request.url),
-            "POST" => HttpClient::post(&template.request.url)
+        let mut client = match template.request.method {
+            Method::Get => HttpClient::get(&template.request.url),
+            Method::Post => HttpClient::post(&template.request.url)
                 .with_body_from_value(template.request.body)?,
-            "PATCH" => HttpClient::patch(&template.request.url)
+            Method::Patch => HttpClient::patch(&template.request.url)
                 .with_body_from_value(template.request.body)?,
-            "PUT" => HttpClient::put(&template.request.url)
+            Method::Put => HttpClient::put(&template.request.url)
                 .with_body_from_value(template.request.body)?,
-            "DELETE" => HttpClient::delete(&template.request.url),
-            _ => return Err(anyhow!("Invalid request method")),
+            Method::Delete => HttpClient::delete(&template.request.url),
         };
 
         if !template.request.headers.is_empty() {

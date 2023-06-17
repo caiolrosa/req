@@ -1,8 +1,64 @@
-use std::{collections::HashMap, time::Duration};
+use std::{collections::HashMap, str::FromStr, time::Duration};
 
 use anyhow::{anyhow, Context, Result};
 use reqwest::{Client, Request, RequestBuilder, Response};
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
+
+#[derive(Debug, Serialize, Deserialize)]
+pub enum Method {
+    #[serde(rename = "GET")]
+    Get,
+
+    #[serde(rename = "POST")]
+    Post,
+
+    #[serde(rename = "PATCH")]
+    Patch,
+
+    #[serde(rename = "PUT")]
+    Put,
+
+    #[serde(rename = "DELETE")]
+    Delete,
+}
+
+impl FromStr for Method {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        match s {
+            "GET" => Ok(Method::Get),
+            "POST" => Ok(Method::Post),
+            "PATCH" => Ok(Method::Patch),
+            "PUT" => Ok(Method::Put),
+            "DELETE" => Ok(Method::Delete),
+            _ => Err(anyhow!("Invalid http method")),
+        }
+    }
+}
+
+impl Method {
+    pub fn as_str(&self) -> &str {
+        match self {
+            Method::Get => "GET",
+            Method::Post => "POST",
+            Method::Patch => "PATCH",
+            Method::Put => "PUT",
+            Method::Delete => "DELETE",
+        }
+    }
+
+    pub fn options() -> Vec<String> {
+        vec![
+            Method::Get.as_str().to_string(),
+            Method::Post.as_str().to_string(),
+            Method::Patch.as_str().to_string(),
+            Method::Put.as_str().to_string(),
+            Method::Delete.as_str().to_string(),
+        ]
+    }
+}
 
 #[derive(Debug)]
 pub struct HttpClient {

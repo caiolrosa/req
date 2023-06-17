@@ -1,10 +1,11 @@
-use anyhow::{anyhow, Context, Result};
+use std::str::FromStr;
+
+use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use clap::Parser;
 use dialoguer::{theme::ColorfulTheme, FuzzySelect, Input};
-use reqwest::Method;
 
-use crate::{cmd::CommandHandler, template::Template};
+use crate::{cmd::CommandHandler, http::Method, template::Template};
 
 use super::ProjectSelector;
 
@@ -15,25 +16,21 @@ pub struct CreateCommandHandler;
 impl ProjectSelector for CreateCommandHandler {}
 
 impl CreateCommandHandler {
-    fn select_request_method() -> Result<String> {
+    fn select_request_method() -> Result<Method> {
         let theme = ColorfulTheme::default();
-        let methods = vec![
-            Method::GET.to_string(),
-            Method::POST.to_string(),
-            Method::PATCH.to_string(),
-            Method::PUT.to_string(),
-            Method::DELETE.to_string(),
-        ];
+        let methods = Method::options();
         let selected_method_index: usize = FuzzySelect::with_theme(&theme)
             .with_prompt("Select request method")
             .items(&methods)
             .default(0)
             .interact()?;
 
-        methods
-            .get(selected_method_index)
-            .ok_or(anyhow!("Failed to find request method from user selection"))
-            .cloned()
+        Method::from_str(
+            methods
+                .get(selected_method_index)
+                .map(|m| m.as_str())
+                .ok_or(anyhow!("Invalid http method"))?,
+        )
     }
 }
 
