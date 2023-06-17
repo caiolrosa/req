@@ -14,7 +14,7 @@ use super::{
 };
 
 #[derive(Parser)]
-#[command(about = "Edit a request template")]
+#[command(about = "Run request from a template")]
 pub struct RunCommandHandler {
     #[command(flatten)]
     header_config: HeaderConfigArgs,
