@@ -1,15 +1,15 @@
 use std::{
     collections::HashMap,
     fs::{self, read_to_string, OpenOptions},
-    io::Write,
     path::PathBuf,
 };
 
 use anyhow::{anyhow, Context, Result};
 use dialoguer::Editor;
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct TemplateRequest {
     pub url: String,
     pub method: String,
@@ -17,7 +17,7 @@ pub struct TemplateRequest {
     pub body: Option<serde_json::Value>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Template {
     pub name: String,
     pub project: String,
@@ -145,15 +145,13 @@ impl Template {
 
         template_path.push(format!("{}.json", self.name));
 
-        let mut file = OpenOptions::new()
+        let file = OpenOptions::new()
             .write(true)
             .create(true)
+            .truncate(true)
             .open(template_path)?;
 
-        let json = serde_json::to_string(self)?;
-
-        file.write_all(json.as_bytes())
-            .context("Failed saving template")
+        serde_json::to_writer(&file, self).context("Failed saving template")
     }
 
     pub fn edit(mut self) -> Result<Self> {
@@ -163,6 +161,12 @@ impl Template {
         let request_edit = request_edit.ok_or(anyhow!("Failed to edit template"))?;
 
         self.request = serde_json::from_str(&request_edit)?;
+
+        if let Some(Value::Object(o)) = &self.request.body {
+            if o.is_empty() {
+                self.request.body = None
+            }
+        }
 
         Ok(self)
     }
