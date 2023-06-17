@@ -17,6 +17,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Commands::Patch(handler) => handler.handle().await?,
         Commands::Delete(handler) => handler.handle().await?,
         Commands::Template(handler) => handler.handle().await?,
+        Commands::Run(handler) => handler.handle().await?,
     };
 
     Ok(())

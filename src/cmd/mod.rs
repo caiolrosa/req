@@ -3,7 +3,8 @@ use clap::{Parser, Subcommand};
 
 use self::{
     delete::DeleteCommandHandler, get::GetCommandHandler, patch::PatchCommandHandler,
-    post::PostCommandHandler, put::PutCommandHandler, template::TemplateCommandHandler,
+    post::PostCommandHandler, put::PutCommandHandler, run::RunCommandHandler,
+    template::TemplateCommandHandler,
 };
 use anyhow::Result;
 
@@ -12,6 +13,7 @@ mod get;
 mod patch;
 mod post;
 mod put;
+mod run;
 mod shared;
 mod template;
 
@@ -38,4 +40,5 @@ pub enum Commands {
     Patch(PatchCommandHandler),
     Delete(DeleteCommandHandler),
     Template(TemplateCommandHandler),
+    Run(RunCommandHandler),
 }

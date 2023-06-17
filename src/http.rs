@@ -1,8 +1,10 @@
-use std::time::Duration;
+use std::{collections::HashMap, time::Duration};
 
 use anyhow::{anyhow, Context, Result};
 use reqwest::{Client, Request, RequestBuilder, Response};
+use serde_json::Value;
 
+#[derive(Debug)]
 pub struct HttpClient {
     req: RequestBuilder,
 }
@@ -63,6 +65,14 @@ impl HttpClient {
         self
     }
 
+    pub fn with_headers_from_hash(mut self, headers: HashMap<String, String>) -> Self {
+        for (k, v) in headers {
+            self.req = self.req.header(k, v);
+        }
+
+        self
+    }
+
     pub fn with_header_from_str(mut self, header: &str) -> Result<Self> {
         let header: String = header.chars().filter(|c| !c.is_whitespace()).collect();
         let header: Vec<_> = header.split(':').collect();
@@ -116,5 +126,21 @@ impl HttpClient {
             .header("Content-Type", "application/x-www-form-urlencoded");
 
         self
+    }
+
+    pub fn with_body_from_value(self, body: Option<Value>) -> Result<Self> {
+        if body.is_none() {
+            return Ok(self);
+        }
+
+        match body {
+            Some(b) => match b {
+                Value::Object(_) => Ok(self.with_json_body(serde_json::to_string(&b)?)),
+                Value::String(s) => Ok(self.with_body(s)),
+                Value::Null => Ok(self),
+                _ => Err(anyhow!("Invalid request body")),
+            },
+            None => Ok(self),
+        }
     }
 }

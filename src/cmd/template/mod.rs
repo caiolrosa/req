@@ -52,7 +52,7 @@ impl CommandHandler for TemplateCommandHandler {
     }
 }
 
-trait ProjectSelector {
+pub trait ProjectSelector {
     fn select_project_name(allow_create: bool) -> Result<String> {
         let theme = ColorfulTheme::default();
 
@@ -86,7 +86,7 @@ trait ProjectSelector {
     }
 }
 
-trait TemplateSelector {
+pub trait TemplateSelector {
     fn select_template_name(project: &str) -> Result<String> {
         let theme = ColorfulTheme::default();
 
