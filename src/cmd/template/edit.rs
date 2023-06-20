@@ -8,7 +8,10 @@ use super::{ProjectSelector, TemplateSelector};
 
 #[derive(Parser)]
 #[command(about = "Edit a request template")]
-pub struct EditCommandHandler;
+pub struct EditCommandHandler {
+    #[arg(long = "variables", help = "Edit the project variables")]
+    edit_variables: bool,
+}
 
 impl ProjectSelector for EditCommandHandler {}
 impl TemplateSelector for EditCommandHandler {}
@@ -17,9 +20,15 @@ impl TemplateSelector for EditCommandHandler {}
 impl CommandHandler for EditCommandHandler {
     async fn handle(&self) -> Result<()> {
         let project_name = Self::select_project_name(false)?;
+        if self.edit_variables {
+            Template::edit_project_variables(&project_name)?;
+            println!("Variables edited successfully for project {project_name}");
+            return Ok(());
+        }
+
         let template_name = Self::select_template_name(&project_name)?;
 
-        let template = Template::from_file(&project_name, &template_name)?.edit()?;
+        let template = Template::load(&project_name, &template_name)?.edit()?;
         template.save()?;
 
         println!(

@@ -1,6 +1,7 @@
 use std::{
     collections::HashMap,
     fs::{self, read_to_string, OpenOptions},
+    io::Write,
     path::PathBuf,
 };
 
@@ -10,6 +11,8 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use crate::http::Method;
+
+mod variable;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TemplateRequest {
@@ -27,7 +30,7 @@ pub struct Template {
 }
 
 impl Template {
-    fn templates_path() -> Result<PathBuf> {
+    pub fn templates_path() -> Result<PathBuf> {
         #[allow(deprecated)] // This only runs on linux for now, some $HOME will work
         let home_dir = std::env::home_dir().ok_or(anyhow!("Unable to find home directory"))?;
 
@@ -80,11 +83,24 @@ impl Template {
         Ok(templates)
     }
 
-    pub fn from_file(project: &str, template: &str) -> Result<Self> {
+    pub fn load(project: &str, template: &str) -> Result<Self> {
         let template_path = Template::templates_path()?
             .join(project)
             .join(format!("{template}.json"));
         let json = read_to_string(template_path)?;
+
+        Ok(serde_json::from_str(&json)?)
+    }
+
+    pub fn load_with_variables(project: &str, template: &str) -> Result<Self> {
+        let template_path = Template::templates_path()?
+            .join(project)
+            .join(format!("{template}.json"));
+
+        let json = read_to_string(template_path)?;
+        println!("{json}");
+        let json = Self::replace_template_variables(project, json)?;
+        println!("{json}");
 
         Ok(serde_json::from_str(&json)?)
     }
@@ -147,20 +163,27 @@ impl Template {
 
         template_path.push(format!("{}.json", self.name));
 
-        let file = OpenOptions::new()
+        let mut file = OpenOptions::new()
             .write(true)
             .create(true)
             .truncate(true)
             .open(template_path)?;
 
-        serde_json::to_writer(&file, self).context("Failed saving template")
+        let json = serde_json::to_string(self)?;
+        file.write_all(json.as_bytes())
+            .context("Failed saving template")?;
+
+        Self::update_project_variables_from_template(&self.project, &json)
+            .context("Failed to update project variables from template")
     }
 
     pub fn edit(mut self) -> Result<Self> {
         let json = serde_json::to_string_pretty(&self.request)?;
 
-        let request_edit = Editor::new().extension(".json").edit(&json)?;
-        let request_edit = request_edit.ok_or(anyhow!("Failed to edit template"))?;
+        let request_edit = Editor::new()
+            .extension(".json")
+            .edit(&json)?
+            .ok_or(anyhow!("Failed to edit template"))?;
 
         self.request = serde_json::from_str(&request_edit)?;
 

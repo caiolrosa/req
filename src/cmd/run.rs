@@ -30,7 +30,7 @@ impl CommandHandler for RunCommandHandler {
         let project_name = Self::select_project_name(false)?;
         let template_name = Self::select_template_name(&project_name)?;
 
-        let template = Template::from_file(&project_name, &template_name)?.edit()?;
+        let template = Template::load_with_variables(&project_name, &template_name)?.edit()?;
 
         let mut client = match template.request.method {
             Method::Get => HttpClient::get(&template.request.url),
