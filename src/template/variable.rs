@@ -33,11 +33,12 @@ impl Template {
     pub fn project_variables_path(project: &str) -> Result<PathBuf> {
         Ok(Self::templates_path()?
             .join(project)
-            .join("._variables.json"))
+            .join("variables")
+            .join("variables.json"))
     }
 
     fn ensure_variables_file_exists(project: &str) -> Result<()> {
-        let project_path = Self::templates_path()?.join(project);
+        let project_path = Self::templates_path()?.join(project).join("variables");
 
         fs::create_dir_all(project_path)
             .context(format!("Failed to create directory for project {project}"))?;
