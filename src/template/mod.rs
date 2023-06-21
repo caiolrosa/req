@@ -98,9 +98,7 @@ impl Template {
             .join(format!("{template}.json"));
 
         let json = read_to_string(template_path)?;
-        println!("{json}");
         let json = Self::replace_template_variables(project, json)?;
-        println!("{json}");
 
         Ok(serde_json::from_str(&json)?)
     }

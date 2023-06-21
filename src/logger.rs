@@ -38,10 +38,13 @@ pub async fn log_response(res: Response, verbose: bool) -> Result<()> {
         log_headers(res.headers())?;
     }
 
-    let json = res.text().await?;
+    let body = res.text().await?;
 
     println!("Response Body:");
-    println!("{}", json.to_colored_json_auto()?);
+    match body.to_colored_json_auto() {
+        Ok(j) => println!("{j}"),
+        Err(_) => println!("{body}"),
+    }
 
     Ok(())
 }
