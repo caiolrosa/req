@@ -25,19 +25,19 @@ pub trait TemplateVariables {
     fn replace_template_variables(project: &str, template_json: String) -> Result<String> {
         let template_variables =
             Template::get_variables_from_string(Template::any_variable_regex(), &template_json);
-        let project_variables = Template::load_project_variables(project)?;
+        let mut project_variables = Template::load_project_variables(project)?;
 
         let mut replaced = template_json;
         for variable in template_variables {
-            let variable_value =
-                Template::parse_template_variable(&variable, project_variables.get(&variable))?;
+            let value = project_variables.remove(&variable);
+            let value = Template::parse_template_variable(&variable, value)
+                .ok_or(anyhow!("Template variable not found"))?;
 
-            replaced = replaced.replace(
-                format!("{{{{{}}}}}", variable).as_str(),
-                variable_value
-                    .as_str()
-                    .ok_or(anyhow!("Failed to parse template variable value"))?,
-            );
+            let value = value
+                .as_str()
+                .ok_or(anyhow!("Failed to parse template variable value"))?;
+
+            replaced = replaced.replace(format!("{{{{{}}}}}", variable).as_str(), value);
         }
 
         Ok(replaced)
@@ -162,14 +162,11 @@ impl Template {
         serde_json::from_reader(file).context("Failed reading the template variables")
     }
 
-    fn parse_template_variable(
-        name: &str,
-        value: Option<&serde_json::Value>,
-    ) -> Result<serde_json::Value> {
+    fn parse_template_variable(name: &str, value: Option<Value>) -> Option<Value> {
         match name {
-            "gen:uuid" => Ok(Value::String(Uuid::new_v4().to_string())),
-            "gen:timestamp" => Ok(Value::String(Utc::now().timestamp().to_string())),
-            _ => Ok(value.ok_or(anyhow!("Template variable not found"))?.clone()),
+            "gen:uuid" => Some(Value::String(Uuid::new_v4().to_string())),
+            "gen:timestamp" => Some(Value::String(Utc::now().timestamp().to_string())),
+            _ => value,
         }
     }
 }
