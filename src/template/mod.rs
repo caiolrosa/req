@@ -12,7 +12,10 @@ use serde_json::Value;
 
 use crate::http::Method;
 
-mod variable;
+use self::{project::TemplateProject, variable::TemplateVariables};
+
+pub mod project;
+pub mod variable;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TemplateRequest {
@@ -29,16 +32,10 @@ pub struct Template {
     pub request: TemplateRequest,
 }
 
+impl TemplateProject for Template {}
+impl TemplateVariables for Template {}
+
 impl Template {
-    pub fn templates_path() -> Result<PathBuf> {
-        #[allow(deprecated)] // This only runs on linux for now, some $HOME will work
-        let home_dir = std::env::home_dir().ok_or(anyhow!("Unable to find home directory"))?;
-
-        let default_templates_path = home_dir.join(".config").join("req").join("templates");
-
-        Ok(default_templates_path)
-    }
-
     pub fn new(name: String, project: String, url: String, method: Method) -> Self {
         Self {
             name,
@@ -52,22 +49,19 @@ impl Template {
         }
     }
 
+    pub fn templates_path() -> Result<PathBuf> {
+        #[allow(deprecated)] // This only runs on linux for now, some $HOME will work
+        let home_dir = std::env::home_dir().ok_or(anyhow!("Unable to find home directory"))?;
+
+        let default_templates_path = home_dir.join(".config").join("req").join("templates");
+
+        Ok(default_templates_path)
+    }
+
     pub fn init_defaults() -> Result<()> {
         let default_templates_path = Template::templates_path()?.join("default");
 
         fs::create_dir_all(default_templates_path).context("Failed creating default template path")
-    }
-
-    pub fn list_projects() -> Result<Vec<String>> {
-        let projects_path = Template::templates_path()?;
-
-        let projects: Vec<String> = fs::read_dir(projects_path)?
-            .flatten()
-            .filter(|entry| entry.path().is_dir())
-            .flat_map(|dir| dir.file_name().into_string())
-            .collect();
-
-        Ok(projects)
     }
 
     pub fn list(project: &str) -> Result<Vec<String>> {
@@ -111,12 +105,6 @@ impl Template {
         fs::remove_file(template_path).context(format!("Failed to delete template {template}"))
     }
 
-    pub fn delete_project(project: &str) -> Result<()> {
-        let project_path = Self::templates_path()?.join(project);
-
-        fs::remove_dir_all(project_path).context(format!("Failed to delete project {project}"))
-    }
-
     pub fn rename(project: &str, template: &str, new_template: &str) -> Result<()> {
         let template_path = Self::templates_path()?
             .join(project)
@@ -127,14 +115,6 @@ impl Template {
 
         fs::rename(template_path, new_template_path)
             .context(format!("Failed to rename template {template}"))
-    }
-
-    pub fn rename_project(project: &str, new_project: &str) -> Result<()> {
-        let project_path = Self::templates_path()?.join(project);
-        let new_project_path = Self::templates_path()?.join(new_project);
-
-        fs::rename(project_path, new_project_path)
-            .context(format!("Failed to rename project {project}"))
     }
 
     pub fn relocate(

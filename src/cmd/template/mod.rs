@@ -3,7 +3,7 @@ use async_trait::async_trait;
 use clap::{Parser, Subcommand};
 use dialoguer::{theme::ColorfulTheme, FuzzySelect, Input};
 
-use crate::template::Template;
+use crate::template::{project::TemplateProject, Template};
 
 use self::{
     create::CreateCommandHandler, delete::DeleteCommandHandler, edit::EditCommandHandler,

@@ -2,7 +2,10 @@ use anyhow::Result;
 use async_trait::async_trait;
 use clap::Parser;
 
-use crate::{cmd::CommandHandler, template::Template};
+use crate::{
+    cmd::CommandHandler,
+    template::{project::TemplateProject, Template},
+};
 
 use super::ProjectSelector;
 

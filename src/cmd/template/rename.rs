@@ -3,7 +3,10 @@ use async_trait::async_trait;
 use clap::Parser;
 use dialoguer::{theme::ColorfulTheme, Input};
 
-use crate::{cmd::CommandHandler, template::Template};
+use crate::{
+    cmd::CommandHandler,
+    template::{project::TemplateProject, Template},
+};
 
 use super::{ProjectSelector, TemplateSelector};
 
