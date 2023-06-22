@@ -27,8 +27,8 @@ impl HttpClientRunner for RunCommandHandler {}
 #[async_trait]
 impl CommandHandler for RunCommandHandler {
     async fn handle(&self) -> Result<()> {
-        let project_name = Self::select_project_name(false)?;
-        let template_name = Self::select_template_name(&project_name)?;
+        let project_name = Self::select_project(false)?;
+        let template_name = Self::select_template(&project_name)?;
 
         let template = Template::load_with_variables(&project_name, &template_name)?.edit()?;
 

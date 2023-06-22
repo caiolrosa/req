@@ -27,10 +27,8 @@ impl CommandHandler for ListCommandHandler {
             return Ok(());
         }
 
-        let project = Self::select_project_name(false)?;
-        let templates = project.templates()?;
-
-        templates
+        Self::select_project(false)?
+            .templates()?
             .iter()
             .for_each(|template| println!("{}", template.name));
 

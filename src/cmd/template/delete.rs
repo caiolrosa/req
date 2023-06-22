@@ -3,10 +3,7 @@ use async_trait::async_trait;
 use clap::Parser;
 use dialoguer::{theme::ColorfulTheme, Confirm};
 
-use crate::{
-    cmd::CommandHandler,
-    template::{project::TemplateProject, Template},
-};
+use crate::cmd::CommandHandler;
 
 use super::{ProjectSelector, TemplateSelector};
 
@@ -23,26 +20,31 @@ impl TemplateSelector for DeleteCommandHandler {}
 #[async_trait]
 impl CommandHandler for DeleteCommandHandler {
     async fn handle(&self) -> Result<()> {
-        let project_name = Self::select_project_name(false)?;
+        let project = Self::select_project(false)?;
         if self.delete_project {
             let should_delete = Confirm::with_theme(&ColorfulTheme::default())
                 .with_prompt(format!(
                     "The entire project [{}] will be deleted, do you wish to proceed?",
-                    &project_name
+                    &project.name
                 ))
                 .interact()?;
 
             if should_delete {
-                Template::delete_project(&project_name)?;
+                let project_name = project.name.to_string();
+                project.delete()?;
+                println!("Project {project_name} deleted successfully");
+
                 return Ok(());
             }
 
             return Ok(());
         }
 
-        let template_name = Self::select_template_name(&project_name)?;
+        let template = Self::select_template(&project)?;
+        let template_name = template.name.to_string();
 
-        Template::delete(&project_name, &template_name)?;
+        template.delete()?;
+        println!("Template {template_name} delete successfully");
 
         Ok(())
     }

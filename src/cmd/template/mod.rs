@@ -3,10 +3,7 @@ use async_trait::async_trait;
 use clap::{Parser, Subcommand};
 use dialoguer::{theme::ColorfulTheme, FuzzySelect, Input};
 
-use crate::template::{
-    project::{Project, TemplateProject},
-    Template,
-};
+use crate::template::{project::Project, Template};
 
 use self::{
     create::CreateCommandHandler, delete::DeleteCommandHandler, edit::EditCommandHandler,
@@ -42,7 +39,7 @@ pub enum TemplateCommands {
 #[async_trait]
 impl CommandHandler for TemplateCommandHandler {
     async fn handle(&self) -> Result<()> {
-        Template::init_defaults()?;
+        Project::init_default()?;
 
         match &self.command {
             TemplateCommands::List(handler) => handler.handle().await,
@@ -56,7 +53,7 @@ impl CommandHandler for TemplateCommandHandler {
 }
 
 pub trait ProjectSelector {
-    fn select_project_name(allow_create: bool) -> Result<Project> {
+    fn select_project(allow_create: bool) -> Result<Project> {
         let theme = ColorfulTheme::default();
 
         let projects = Project::list()?;
@@ -93,7 +90,7 @@ pub trait ProjectSelector {
 }
 
 pub trait TemplateSelector {
-    fn select_template_name(project: &Project) -> Result<Template> {
+    fn select_template(project: &Project) -> Result<Template> {
         let theme = ColorfulTheme::default();
 
         let templates = project.templates()?;

@@ -3,10 +3,7 @@ use async_trait::async_trait;
 use clap::Parser;
 use dialoguer::{theme::ColorfulTheme, Input};
 
-use crate::{
-    cmd::CommandHandler,
-    template::{project::TemplateProject, Template},
-};
+use crate::cmd::CommandHandler;
 
 use super::{ProjectSelector, TemplateSelector};
 
@@ -25,26 +22,34 @@ impl CommandHandler for RenameCommandHandler {
     async fn handle(&self) -> Result<()> {
         let theme = ColorfulTheme::default();
 
-        let project_name = Self::select_project_name(false)?;
+        let project = Self::select_project(false)?;
         if self.rename_project {
             let new_project_name: String = Input::with_theme(&theme)
                 .with_prompt("New project name")
                 .interact_text()?;
 
-            Template::rename_project(&project_name, &new_project_name)?;
+            let new_project = project.rename(new_project_name)?;
 
-            println!("Project renamed from {project_name} to {new_project_name}");
+            println!(
+                "Project renamed from {} to {}",
+                project.name, new_project.name
+            );
+
             return Ok(());
         }
 
-        let template_name = Self::select_template_name(&project_name)?;
+        let template = Self::select_template(&project)?;
         let new_template_name: String = Input::with_theme(&theme)
             .with_prompt("New template name")
             .interact_text()?;
 
-        Template::rename(&project_name, &template_name, &new_template_name)?;
+        let new_template = template.rename(&new_template_name)?;
 
-        println!("Template renamed from {template_name} to {new_template_name}");
+        println!(
+            "Template renamed from {} to {}",
+            template.name, new_template.name
+        );
+
         Ok(())
     }
 }

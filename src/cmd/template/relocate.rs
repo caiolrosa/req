@@ -3,7 +3,7 @@ use async_trait::async_trait;
 use clap::Parser;
 use dialoguer::{theme::ColorfulTheme, Confirm, Input};
 
-use crate::{cmd::CommandHandler, template::Template};
+use crate::cmd::CommandHandler;
 
 use super::{ProjectSelector, TemplateSelector};
 
@@ -19,10 +19,10 @@ impl CommandHandler for RelocateCommandHandler {
     async fn handle(&self) -> Result<()> {
         let theme = ColorfulTheme::default();
 
-        let project_name = Self::select_project_name(false)?;
-        let template_name = Self::select_template_name(&project_name)?;
-        let new_project_name = Self::select_project_name(true)?;
-        let mut new_template_name = template_name.to_owned();
+        let project = Self::select_project(false)?;
+        let template = Self::select_template(&project)?;
+        let new_project = Self::select_project(true)?;
+        let mut new_template_name = template.name.to_string();
 
         let rename_template = Confirm::with_theme(&theme)
             .with_prompt("Do you want to rename the template?")
@@ -34,14 +34,13 @@ impl CommandHandler for RelocateCommandHandler {
                 .interact_text()?;
         }
 
-        Template::relocate(
-            &project_name,
-            &new_project_name,
-            &template_name,
-            &new_template_name,
-        )?;
+        project.relocate_template(&mut template, &mut project, &new_template_name)?;
 
-        println!("Template moved from {project_name} to {new_project_name}");
+        println!(
+            "Template moved from {} to {}",
+            project.name, new_project.name
+        );
+
         Ok(())
     }
 }
