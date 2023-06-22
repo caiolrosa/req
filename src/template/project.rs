@@ -6,10 +6,10 @@ use anyhow::{anyhow, Context, Result};
 pub struct Project {
     pub name: String,
     pub path: PathBuf,
-    pub templates: Vec<Template>,
-    pub variables: Vec<Variable>,
-    pub current_template_index: Option<u8>,
-    pub current_variable_index: Option<u8>,
+    templates: Vec<Template>,
+    variables: Vec<Variable>,
+    current_template_index: Option<u8>,
+    current_variable_index: Option<u8>,
 }
 
 impl Project {
@@ -31,6 +31,14 @@ impl Project {
         })
     }
 
+    pub fn create(project_name: String) -> Result<Self> {
+        let project = Self::new(project_name)?;
+
+        fs::create_dir_all(project.path)?;
+
+        Ok(project)
+    }
+
     pub fn list() -> Result<Vec<Self>> {
         let path = Self::project_path()?;
 
@@ -40,6 +48,15 @@ impl Project {
             .flat_map(|dir| dir.file_name().into_string())
             .flat_map(|name| Self::new(name))
             .collect())
+    }
+
+    pub fn templates(&self) -> Result<&Vec<Template>> {
+        if self.templates.is_empty() {
+            self.templates = Template::list(&self.path)?;
+            return Ok(&self.templates);
+        }
+
+        Ok(&self.templates)
     }
 
     pub fn rename(&mut self, new_project_name: String) -> Result<()> {

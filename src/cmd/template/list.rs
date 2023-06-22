@@ -2,10 +2,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use clap::Parser;
 
-use crate::{
-    cmd::CommandHandler,
-    template::{project::TemplateProject, Template},
-};
+use crate::{cmd::CommandHandler, template::project::Project};
 
 use super::ProjectSelector;
 
@@ -22,16 +19,20 @@ impl ProjectSelector for ListCommandHandler {}
 impl CommandHandler for ListCommandHandler {
     async fn handle(&self) -> Result<()> {
         if self.list_projects {
-            let projects = Template::list_projects()?;
-            projects.iter().for_each(|project| println!("{project}"));
+            let projects = Project::list()?;
+            projects
+                .iter()
+                .for_each(|project| println!("{}", project.name));
 
             return Ok(());
         }
 
-        let project_name = Self::select_project_name(false)?;
-        let templates = Template::list(&project_name)?;
+        let project = Self::select_project_name(false)?;
+        let templates = project.templates()?;
 
-        templates.iter().for_each(|template| println!("{template}"));
+        templates
+            .iter()
+            .for_each(|template| println!("{}", template.name));
 
         Ok(())
     }

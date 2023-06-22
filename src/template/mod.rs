@@ -12,7 +12,9 @@ use serde_json::Value;
 
 use crate::http::Method;
 
-mod project;
+use self::project::Project;
+
+pub mod project;
 mod variable;
 
 #[derive(Serialize, Deserialize)]
@@ -101,7 +103,26 @@ impl Template {
         Ok(())
     }
 
-    pub fn rename(&mut self, new_path: PathBuf) -> Result<()> {
+    pub fn relocate(&mut self, target: &Project, new_name: &str) -> Result<()> {
+        let new_path = target.path.join(format!("{new_name}.json"));
+
+        fs::rename(self.path, new_path).context(format!(
+            "Failed to move template to project {}",
+            target.name
+        ))?;
+
+        self.name = Self::name_from_path(&new_path)?;
+        self.path = new_path;
+
+        Ok(())
+    }
+
+    pub fn rename(&mut self, new_name: &str) -> Result<()> {
+        let new_path = self
+            .path
+            .parent()
+            .ok_or(anyhow!("Failed to read the template parent directory"))?
+            .join(new_name);
         fs::rename(self.path, new_path)
             .context(format!("Failed to rename template {}", self.name))?;
 

@@ -3,7 +3,10 @@ use async_trait::async_trait;
 use clap::{Parser, Subcommand};
 use dialoguer::{theme::ColorfulTheme, FuzzySelect, Input};
 
-use crate::template::{project::TemplateProject, Template};
+use crate::template::{
+    project::{Project, TemplateProject},
+    Template,
+};
 
 use self::{
     create::CreateCommandHandler, delete::DeleteCommandHandler, edit::EditCommandHandler,
@@ -53,12 +56,11 @@ impl CommandHandler for TemplateCommandHandler {
 }
 
 pub trait ProjectSelector {
-    fn select_project_name(allow_create: bool) -> Result<String> {
+    fn select_project_name(allow_create: bool) -> Result<Project> {
         let theme = ColorfulTheme::default();
 
-        let projects = Template::list_projects()?;
-        let mut select_project_prompt = FuzzySelect::with_theme(&theme);
-        let select_project_prompt = select_project_prompt
+        let projects = Project::list()?;
+        let mut select_project_prompt = FuzzySelect::with_theme(&theme)
             .with_prompt("Select project")
             .default(0);
 
@@ -66,44 +68,50 @@ pub trait ProjectSelector {
             select_project_prompt.item("Create new project");
         }
 
-        let mut selected_project_index = select_project_prompt.items(&projects).interact()?;
+        let project_names: Vec<String> = projects.iter().map(|p| p.name).collect();
+        let mut selected_project_index = select_project_prompt.items(&project_names).interact()?;
 
         if allow_create && selected_project_index == 0 {
-            return Input::with_theme(&theme)
+            let project_name: String = Input::with_theme(&theme)
                 .with_prompt("New project name")
                 .interact_text()
-                .context("Failed reading project selection");
+                .context("Failed reading project selection")?;
+
+            return Project::create(project_name);
         }
 
         if allow_create {
             selected_project_index -= 1
         }
 
-        projects
-            .get(selected_project_index)
-            .map(|project| project.to_string())
-            .ok_or(anyhow!("Failed to find project name from user selection"))
+        if selected_project_index > projects.len() - 1 || selected_project_index < 0 {
+            return Err(anyhow!("Failed to read project, index out of bounds"));
+        }
+
+        Ok(projects.remove(selected_project_index))
     }
 }
 
 pub trait TemplateSelector {
-    fn select_template_name(project: &str) -> Result<String> {
+    fn select_template_name(project: &Project) -> Result<Template> {
         let theme = ColorfulTheme::default();
 
-        let templates = Template::list(project)?;
+        let templates = project.templates()?;
         if templates.is_empty() {
             return Err(anyhow!("There are no available templates"));
         }
 
+        let template_names: Vec<String> = templates.iter().map(|t| t.name).collect();
         let selected_template_index = FuzzySelect::with_theme(&theme)
             .with_prompt("Select template")
-            .items(&templates)
+            .items(&template_names)
             .default(0)
             .interact()?;
 
-        templates
-            .get(selected_template_index)
-            .map(|template| template.to_string())
-            .ok_or(anyhow!("Failed to find tempalte name for user selection"))
+        if selected_template_index < 0 || templates.len() - 1 < selected_template_index {
+            return Err(anyhow!("Failed to read template, index out of bounds"));
+        }
+
+        Ok(templates.remove(selected_template_index))
     }
 }
