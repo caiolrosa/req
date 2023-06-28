@@ -23,7 +23,7 @@ impl CommandHandler for EditCommandHandler {
         let mut project = Self::select_project(false)?;
         if self.edit_variables {
             Self::select_variable(&mut project, false)?;
-            project.current_variable()?.edit()?;
+            project.current_variable()?.edit()?.save()?;
             println!(
                 "Variables edited successfully for project {}",
                 &project.name

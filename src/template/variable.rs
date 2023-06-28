@@ -96,7 +96,7 @@ impl Variable {
         serde_json::to_writer(&file, &self.contents).context("Failed to save edited variables")
     }
 
-    pub fn edit(&self) -> Result<()> {
+    pub fn edit(&mut self) -> Result<&mut Self> {
         let json = serde_json::to_string_pretty(&self.contents)?;
         let variables_edit = Editor::new()
             .extension(".json")
@@ -107,7 +107,9 @@ impl Variable {
 
         Self::validate(&parsed_variables)?;
 
-        Ok(())
+        self.contents = parsed_variables;
+
+        Ok(self)
     }
 
     fn validate(variables: &TemplateVariable) -> Result<()> {
