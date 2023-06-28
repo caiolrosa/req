@@ -77,21 +77,29 @@ impl Project {
 
     pub fn variables(&mut self) -> Result<&Vec<Variable>> {
         if self.variables.is_empty() {
-            let path = self.variables_path();
-            self.variables = fs::read_dir(path)?
-                .flatten()
-                .filter(|entry| entry.path().is_file())
-                .flat_map(|file| Variable::load(file.path()))
-                .collect();
+            self.load_variables()?;
         }
 
         Ok(&self.variables)
     }
 
     pub fn update_variables(&mut self, template_json: &str) -> Result<()> {
+        self.load_variables()?;
+
         for var in &mut self.variables {
             var.update_from_template_string(template_json)?;
         }
+
+        Ok(())
+    }
+
+    fn load_variables(&mut self) -> Result<()> {
+        let path = self.variables_path();
+        self.variables = fs::read_dir(path)?
+            .flatten()
+            .filter(|entry| entry.path().is_file())
+            .flat_map(|file| Variable::load(file.path()))
+            .collect();
 
         Ok(())
     }

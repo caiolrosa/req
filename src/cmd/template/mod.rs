@@ -107,7 +107,7 @@ pub trait TemplateSelector {
             .default(0)
             .interact()?;
 
-        if template_names.len() - 1 > selected_template_index {
+        if selected_template_index > template_names.len() - 1 {
             return Err(anyhow!("Failed to read template, index out of bounds"));
         }
 
