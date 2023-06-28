@@ -38,28 +38,6 @@ impl FromStr for Method {
     }
 }
 
-impl Method {
-    pub fn as_str(&self) -> &str {
-        match self {
-            Method::Get => "GET",
-            Method::Post => "POST",
-            Method::Patch => "PATCH",
-            Method::Put => "PUT",
-            Method::Delete => "DELETE",
-        }
-    }
-
-    pub fn options() -> Vec<String> {
-        vec![
-            Method::Get.as_str().to_string(),
-            Method::Post.as_str().to_string(),
-            Method::Patch.as_str().to_string(),
-            Method::Put.as_str().to_string(),
-            Method::Delete.as_str().to_string(),
-        ]
-    }
-}
-
 #[derive(Debug)]
 pub struct HttpClient {
     req: RequestBuilder,

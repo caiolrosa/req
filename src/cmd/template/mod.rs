@@ -39,8 +39,6 @@ pub enum TemplateCommands {
 #[async_trait]
 impl CommandHandler for TemplateCommandHandler {
     async fn handle(&self) -> Result<()> {
-        Project::init_default()?;
-
         match &self.command {
             TemplateCommands::List(handler) => handler.handle().await,
             TemplateCommands::Create(handler) => handler.handle().await,
@@ -56,8 +54,13 @@ pub trait ProjectSelector {
     fn select_project(allow_create: bool) -> Result<Project> {
         let theme = ColorfulTheme::default();
 
-        let projects = Project::list()?;
-        let mut select_project_prompt = FuzzySelect::with_theme(&theme)
+        let mut projects = Project::list()?;
+        if !allow_create && projects.is_empty() {
+            return Err(anyhow!("There are not projects available"));
+        }
+
+        let mut select_project_prompt = FuzzySelect::with_theme(&theme);
+        let select_project_prompt = select_project_prompt
             .with_prompt("Select project")
             .default(0);
 
@@ -65,7 +68,7 @@ pub trait ProjectSelector {
             select_project_prompt.item("Create new project");
         }
 
-        let project_names: Vec<String> = projects.iter().map(|p| p.name).collect();
+        let project_names: Vec<&str> = projects.iter().map(|p| p.name.as_str()).collect();
         let mut selected_project_index = select_project_prompt.items(&project_names).interact()?;
 
         if allow_create && selected_project_index == 0 {
@@ -81,7 +84,7 @@ pub trait ProjectSelector {
             selected_project_index -= 1
         }
 
-        if selected_project_index > projects.len() - 1 || selected_project_index < 0 {
+        if selected_project_index > projects.len() - 1 {
             return Err(anyhow!("Failed to read project, index out of bounds"));
         }
 
@@ -90,25 +93,67 @@ pub trait ProjectSelector {
 }
 
 pub trait TemplateSelector {
-    fn select_template(project: &Project) -> Result<Template> {
+    fn select_template(project: Project) -> Result<Template> {
         let theme = ColorfulTheme::default();
 
-        let templates = project.templates()?;
-        if templates.is_empty() {
+        let mut template_names = Template::list(&project)?;
+        if template_names.is_empty() {
             return Err(anyhow!("There are no available templates"));
         }
 
-        let template_names: Vec<String> = templates.iter().map(|t| t.name).collect();
         let selected_template_index = FuzzySelect::with_theme(&theme)
             .with_prompt("Select template")
             .items(&template_names)
             .default(0)
             .interact()?;
 
-        if selected_template_index < 0 || templates.len() - 1 < selected_template_index {
+        if template_names.len() - 1 > selected_template_index {
             return Err(anyhow!("Failed to read template, index out of bounds"));
         }
 
-        Ok(templates.remove(selected_template_index))
+        Template::load(
+            project,
+            template_names.remove(selected_template_index).as_str(),
+        )
+    }
+}
+
+pub trait VariableSelector {
+    fn select_variable(project: &mut Project, allow_create: bool) -> Result<&mut Project> {
+        let theme = ColorfulTheme::default();
+
+        let variables = project.variables()?;
+
+        let mut select_project_prompt = FuzzySelect::with_theme(&theme);
+        let select_variable_prompt = select_project_prompt
+            .with_prompt("Select variable")
+            .default(0);
+
+        if allow_create {
+            select_variable_prompt.item("Create new variable");
+        }
+
+        let variable_names: Vec<&str> = variables.iter().map(|p| p.name.as_str()).collect();
+        let mut selected_variable_index =
+            select_variable_prompt.items(&variable_names).interact()?;
+
+        if allow_create && selected_variable_index == 0 {
+            let variable_name: String = Input::with_theme(&theme)
+                .with_prompt("New variable name")
+                .interact_text()
+                .context("Failed reading variable selection")?;
+
+            return project.create_variable(&variable_name);
+        }
+
+        if allow_create {
+            selected_variable_index -= 1
+        }
+
+        if selected_variable_index > variables.len() - 1 {
+            return Err(anyhow!("Failed to read variable, index out of bounds"));
+        }
+
+        project.select_variable(selected_variable_index)
     }
 }

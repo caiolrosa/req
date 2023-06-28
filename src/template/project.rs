@@ -1,34 +1,20 @@
 use std::{fs, path::PathBuf};
 
-use super::{variable::Variable, Template};
+use super::variable::Variable;
 use anyhow::{anyhow, Context, Result};
 
 pub struct Project {
     pub name: String,
     pub path: PathBuf,
-    templates: Vec<Template>,
     variables: Vec<Variable>,
-    current_template_index: Option<usize>,
     current_variable_index: Option<usize>,
 }
 
 impl Project {
-    pub fn init_default() -> Result<()> {
-        let project = Self::new("default".into())?;
-        if project.path.exists() {
-            return Ok(());
-        }
-
-        let mut project = Self::create("default".into())?;
-        project.create_template("default".into())?;
-
-        Ok(())
-    }
-
     pub fn create(project_name: String) -> Result<Self> {
         let project = Self::new(project_name)?;
 
-        fs::create_dir_all(project.path)?;
+        fs::create_dir_all(project.variables_path())?;
 
         Ok(project)
     }
@@ -40,35 +26,15 @@ impl Project {
             .flatten()
             .filter(|entry| entry.path().is_dir())
             .flat_map(|dir| dir.file_name().into_string())
-            .flat_map(|name| Self::new(name))
+            .flat_map(Self::new)
             .collect())
-    }
-
-    pub fn create_template(&mut self, template_name: &str) -> Result<&Template> {
-        let template = Template::create(&self.path, &template_name)?;
-
-        self.templates.push(template);
-        self.current_template_index = Some(self.templates.len() - 1);
-
-        self.templates
-            .get(self.current_template_index.unwrap())
-            .ok_or(anyhow!("Failed to create template"))
-    }
-
-    pub fn templates(&self) -> Result<&Vec<Template>> {
-        if self.templates.is_empty() {
-            self.templates = Template::list(&self.path)?;
-            return Ok(&self.templates);
-        }
-
-        Ok(&self.templates)
     }
 
     pub fn rename(&mut self, new_project_name: String) -> Result<&mut Self> {
         let path = Self::project_path()?.join(&self.name);
         let new_path = Self::project_path()?.join(&new_project_name);
 
-        fs::rename(path, new_path).context(format!("Failed to rename project {}", self.name))?;
+        fs::rename(path, &new_path).context(format!("Failed to rename project {}", self.name))?;
 
         self.name = new_project_name;
         self.path = new_path;
@@ -76,40 +42,72 @@ impl Project {
         Ok(self)
     }
 
-    pub fn relocate_template(
-        &mut self,
-        template: &mut Template,
-        target: &mut Project,
-        new_template_name: &str,
-    ) -> Result<&mut Template> {
-        let new_template_path = target.path.join(new_template_name);
-        template.relocate(new_template_path)?;
-
-        let index = self
-            .templates
-            .iter()
-            .position(|t| t.name == new_template_name)
-            .ok_or(anyhow!("Failed to find template in current project"))?;
-
-        let mut template = self.templates.remove(index);
-        target.templates.push(template);
-
-        Ok(&mut template)
-    }
-
     pub fn delete(self) -> Result<()> {
         fs::remove_dir_all(self.path).context(format!("Failed to delete project {}", self.name))
     }
 
+    pub fn create_variable(&mut self, variable_name: &str) -> Result<&mut Self> {
+        let variable = Variable::create(self.variables_path(), variable_name)?;
+
+        self.variables.push(variable);
+        self.current_variable_index = Some(self.variables.len() - 1);
+
+        Ok(self)
+    }
+
+    pub fn select_variable(&mut self, index: usize) -> Result<&mut Self> {
+        if !(0..self.variables.len()).contains(&index) {
+            return Err(anyhow!("Invalid selected variable index"));
+        }
+
+        self.current_variable_index = Some(index);
+
+        Ok(self)
+    }
+
+    pub fn current_variable(&mut self) -> Result<&mut Variable> {
+        let index = self.current_variable_index.ok_or(anyhow!(
+            "A variable must be selected to perform this action"
+        ))?;
+
+        self.variables
+            .get_mut(index)
+            .ok_or(anyhow!("Variable not found"))
+    }
+
+    pub fn variables(&mut self) -> Result<&Vec<Variable>> {
+        if self.variables.is_empty() {
+            let path = self.variables_path();
+            self.variables = fs::read_dir(path)?
+                .flatten()
+                .filter(|entry| entry.path().is_file())
+                .flat_map(|file| Variable::load(file.path()))
+                .collect();
+        }
+
+        Ok(&self.variables)
+    }
+
+    pub fn update_variables(&mut self, template_json: &str) -> Result<()> {
+        for var in &mut self.variables {
+            var.update_from_template_string(template_json)?;
+        }
+
+        Ok(())
+    }
+
     fn new(project_name: String) -> Result<Self> {
+        let path = Self::project_path()?.join(&project_name);
         Ok(Self {
             name: project_name,
-            path: Self::project_path()?.join(project_name),
-            templates: vec![],
+            path,
             variables: vec![],
-            current_template_index: None,
             current_variable_index: None,
         })
+    }
+
+    fn variables_path(&self) -> PathBuf {
+        self.path.join("variables")
     }
 
     fn project_path() -> Result<PathBuf> {

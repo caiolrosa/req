@@ -1,4 +1,8 @@
-use std::{collections::HashMap, fs::OpenOptions, path::PathBuf};
+use std::{
+    collections::HashMap,
+    fs::{self, OpenOptions},
+    path::PathBuf,
+};
 
 use anyhow::{anyhow, Context, Result};
 use chrono::Utc;
@@ -16,6 +20,39 @@ pub struct Variable {
 }
 
 impl Variable {
+    pub fn create(path: PathBuf, variable_name: &str) -> Result<Self> {
+        let variable = Self {
+            name: variable_name.to_string(),
+            path: path.join(format!("{variable_name}.json")),
+            contents: TemplateVariable::default(),
+        };
+
+        let file = OpenOptions::new()
+            .create(true)
+            .write(true)
+            .open(&variable.path)?;
+
+        serde_json::to_writer(file, &variable.contents)?;
+
+        Ok(variable)
+    }
+
+    pub fn load(path: PathBuf) -> Result<Self> {
+        let name = path
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .map(|s| s.to_string())
+            .ok_or(anyhow!("Failed to read variable file name"))?;
+
+        let contents = fs::read_to_string(&path)?;
+        let contents = serde_json::from_str(&contents)?;
+
+        Ok(Self {
+            name,
+            path,
+            contents,
+        })
+    }
     pub fn replace_template_string(&self, template_json: String) -> Result<String> {
         let template_variables =
             Self::get_variables_from_string(Self::any_variable_regex(), &template_json);
@@ -39,16 +76,12 @@ impl Variable {
         let template_variables =
             Self::get_variables_from_string(Self::input_variable_regex(), template_string);
 
-        self.contents =
-            template_variables
-                .iter()
-                .fold(self.contents, |mut acc: TemplateVariable, var| {
-                    if acc.get(var).is_none() {
-                        acc.insert(var.to_string(), Value::String("".to_string()));
-                    }
-
-                    acc
-                });
+        for var in template_variables {
+            if self.contents.get(&var).is_none() {
+                self.contents
+                    .insert(var.to_string(), Value::String("".into()));
+            }
+        }
 
         self.save()
     }

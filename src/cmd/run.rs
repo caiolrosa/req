@@ -5,12 +5,11 @@ use clap::Parser;
 use crate::{
     cmd::CommandHandler,
     http::{HttpClient, Method},
-    template::Template,
 };
 
 use super::{
     shared::{HeaderConfigArgs, HttpClientRunner},
-    template::{ProjectSelector, TemplateSelector},
+    template::{ProjectSelector, TemplateSelector, VariableSelector},
 };
 
 #[derive(Parser)]
@@ -22,29 +21,29 @@ pub struct RunCommandHandler {
 
 impl ProjectSelector for RunCommandHandler {}
 impl TemplateSelector for RunCommandHandler {}
+impl VariableSelector for RunCommandHandler {}
 impl HttpClientRunner for RunCommandHandler {}
 
 #[async_trait]
 impl CommandHandler for RunCommandHandler {
     async fn handle(&self) -> Result<()> {
-        let project_name = Self::select_project(false)?;
-        let template_name = Self::select_template(&project_name)?;
+        let mut project = Self::select_project(false)?;
+        Self::select_variable(&mut project, false)?;
 
-        let template = Template::load_with_variables(&project_name, &template_name)?.edit()?;
+        let mut template = Self::select_template(project)?;
 
-        let mut client = match template.request.method {
-            Method::Get => HttpClient::get(&template.request.url),
-            Method::Post => HttpClient::post(&template.request.url)
-                .with_body_from_value(template.request.body)?,
-            Method::Patch => HttpClient::patch(&template.request.url)
-                .with_body_from_value(template.request.body)?,
-            Method::Put => HttpClient::put(&template.request.url)
-                .with_body_from_value(template.request.body)?,
-            Method::Delete => HttpClient::delete(&template.request.url),
+        let request = template.request_with_variables()?;
+
+        let mut client = match request.method {
+            Method::Get => HttpClient::get(&request.url),
+            Method::Post => HttpClient::post(&request.url).with_body_from_value(request.body)?,
+            Method::Patch => HttpClient::patch(&request.url).with_body_from_value(request.body)?,
+            Method::Put => HttpClient::put(&request.url).with_body_from_value(request.body)?,
+            Method::Delete => HttpClient::delete(&request.url),
         };
 
-        if !template.request.headers.is_empty() {
-            client = client.with_headers_from_hash(template.request.headers);
+        if !request.headers.is_empty() {
+            client = client.with_headers_from_hash(request.headers);
         }
 
         Self::run_http_client(client, self.header_config.verbose).await

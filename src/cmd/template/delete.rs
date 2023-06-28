@@ -40,11 +40,11 @@ impl CommandHandler for DeleteCommandHandler {
             return Ok(());
         }
 
-        let template = Self::select_template(&project)?;
+        let template = Self::select_template(project)?;
         let template_name = template.name.to_string();
 
         template.delete()?;
-        println!("Template {template_name} delete successfully");
+        println!("Template {} delete successfully", template_name);
 
         Ok(())
     }

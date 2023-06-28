@@ -20,7 +20,8 @@ impl CommandHandler for RelocateCommandHandler {
         let theme = ColorfulTheme::default();
 
         let project = Self::select_project(false)?;
-        let template = Self::select_template(&project)?;
+        let old_project_name = project.name.to_string();
+        let mut template = Self::select_template(project)?;
         let new_project = Self::select_project(true)?;
         let mut new_template_name = template.name.to_string();
 
@@ -34,11 +35,11 @@ impl CommandHandler for RelocateCommandHandler {
                 .interact_text()?;
         }
 
-        project.relocate_template(&mut template, &mut project, &new_template_name)?;
+        template.relocate(new_project, &new_template_name)?;
 
         println!(
             "Template moved from {} to {}",
-            project.name, new_project.name
+            old_project_name, template.project.name
         );
 
         Ok(())

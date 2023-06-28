@@ -12,6 +12,8 @@ use serde_json::Value;
 
 use crate::http::Method;
 
+use self::project::Project;
+
 pub mod project;
 mod variable;
 
@@ -38,44 +40,61 @@ pub struct Template {
     pub name: String,
     pub path: PathBuf,
     pub request: TemplateRequest,
+    pub project: Project,
 }
 
 impl Template {
-    pub fn create(path: &PathBuf, template_name: &str) -> Result<Self> {
-        let path = path.join(format!("{template_name}.json"));
-        let template = Self::new(path)?;
+    pub fn create(project: Project, template_name: &str) -> Result<Self> {
+        let mut template = Self::new(project, template_name);
 
-        let file = OpenOptions::new()
-            .create(true)
-            .write(true)
-            .truncate(true)
-            .open(path)?;
-
-        serde_json::to_writer(file, &template.request)?;
+        template.edit()?.save()?;
 
         Ok(template)
     }
 
-    pub fn list(path: &PathBuf) -> Result<Vec<Self>> {
-        Ok(fs::read_dir(path)?
-            .flatten()
-            .filter(|entry| entry.path().is_file())
-            .flat_map(|file| Self::new(file.path()))
-            .collect())
+    pub fn list(project: &Project) -> Result<Vec<String>> {
+        let mut template_names = vec![];
+        for file in fs::read_dir(&project.path)?.flatten() {
+            if !file.path().is_file() {
+                continue;
+            }
+
+            template_names.push(
+                file.path()
+                    .file_stem()
+                    .and_then(|s| s.to_str())
+                    .map(|s| s.to_string())
+                    .ok_or(anyhow!("Failed to read template name"))?,
+            )
+        }
+
+        Ok(template_names)
+    }
+
+    pub fn load(project: Project, template_name: &str) -> Result<Self> {
+        let path = project.path.join(format!("{template_name}.json"));
+        let json = fs::read_to_string(path)?;
+        let request: TemplateRequest = serde_json::from_str(&json)?;
+
+        let mut template = Self::new(project, template_name);
+        template.request = request;
+
+        Ok(template)
     }
 
     pub fn save(&mut self) -> Result<&mut Self> {
         let mut file = OpenOptions::new()
+            .create(true)
             .write(true)
             .truncate(true)
-            .open(self.path)?;
+            .open(&self.path)?;
 
         let json = serde_json::to_string(&self.request)?;
 
         file.write_all(json.as_bytes())
-            .context(format!("Failed to save template {}", self.name));
+            .context(format!("Failed to save template {}", self.name))?;
 
-        // todo!("Implement update project variables from template");
+        self.project.update_variables(&json)?;
 
         Ok(self)
     }
@@ -99,36 +118,27 @@ impl Template {
         Ok(self)
     }
 
-    pub fn relocate(&mut self, new_path: PathBuf) -> Result<&mut Self> {
-        let project_name = new_path
-            .parent()
-            .ok_or(anyhow!("Invalid template path"))?
-            .file_name()
-            .ok_or(anyhow!("Invalid template project path"))?
-            .to_str()
-            .ok_or(anyhow!("Failed to read project name from template"))?;
+    pub fn relocate(&mut self, target: Project, new_name: &str) -> Result<&mut Self> {
+        let new_path = target.path.join(new_name);
 
-        fs::rename(self.path, new_path).context(format!(
+        fs::rename(&self.path, &new_path).context(format!(
             "Failed to move template to project {}",
-            project_name
+            target.name
         ))?;
 
-        self.name = Self::name_from_path(&new_path)?;
+        self.name = new_name.to_string();
         self.path = new_path;
+        self.project = target;
 
         Ok(self)
     }
 
     pub fn rename(&mut self, new_name: &str) -> Result<&mut Self> {
-        let new_path = self
-            .path
-            .parent()
-            .ok_or(anyhow!("Failed to read the template parent directory"))?
-            .join(new_name);
-        fs::rename(self.path, new_path)
+        let new_path = self.project.path.join(new_name);
+        fs::rename(&self.path, &new_path)
             .context(format!("Failed to rename template {}", self.name))?;
 
-        self.name = Self::name_from_path(&new_path)?;
+        self.name = new_name.to_string();
         self.path = new_path;
 
         Ok(self)
@@ -138,22 +148,27 @@ impl Template {
         fs::remove_file(self.path).context(format!("Failed to delete template {}", self.name))
     }
 
-    fn name_from_path(path: &PathBuf) -> Result<String> {
-        let name = path
-            .file_stem()
-            .ok_or(anyhow!("Failed to read template file name"))?;
+    pub fn request_with_variables(&mut self) -> Result<TemplateRequest> {
+        let json = serde_json::to_string_pretty(&self.request)?;
+        let json = self
+            .project
+            .current_variable()?
+            .replace_template_string(json)?;
 
-        Ok(name
-            .to_str()
-            .ok_or(anyhow!("File name is not a valid string"))?
-            .to_string())
+        let request_edit = Editor::new()
+            .extension(".json")
+            .edit(&json)?
+            .ok_or(anyhow!("Failed to edit request"))?;
+
+        serde_json::from_str(&request_edit).context("Failed to parse edited request")
     }
 
-    fn new(path: PathBuf) -> Result<Self> {
-        Ok(Self {
-            name: Self::name_from_path(&path)?,
-            path,
+    pub fn new(project: Project, template_name: &str) -> Self {
+        Self {
+            name: template_name.to_string(),
+            path: project.path.join(format!("{template_name}.json")),
             request: TemplateRequest::default(),
-        })
+            project,
+        }
     }
 }

@@ -22,7 +22,8 @@ impl CommandHandler for RenameCommandHandler {
     async fn handle(&self) -> Result<()> {
         let theme = ColorfulTheme::default();
 
-        let project = Self::select_project(false)?;
+        let mut project = Self::select_project(false)?;
+        let old_project_name = project.name.to_string();
         if self.rename_project {
             let new_project_name: String = Input::with_theme(&theme)
                 .with_prompt("New project name")
@@ -32,13 +33,14 @@ impl CommandHandler for RenameCommandHandler {
 
             println!(
                 "Project renamed from {} to {}",
-                project.name, new_project.name
+                old_project_name, new_project.name
             );
 
             return Ok(());
         }
 
-        let template = Self::select_template(&project)?;
+        let mut template = Self::select_template(project)?;
+        let old_template_name = template.name.to_string();
         let new_template_name: String = Input::with_theme(&theme)
             .with_prompt("New template name")
             .interact_text()?;
@@ -47,7 +49,7 @@ impl CommandHandler for RenameCommandHandler {
 
         println!(
             "Template renamed from {} to {}",
-            template.name, new_template.name
+            old_template_name, new_template.name
         );
 
         Ok(())
