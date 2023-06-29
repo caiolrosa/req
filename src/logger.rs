@@ -4,7 +4,7 @@ use anyhow::Result;
 use colored_json::ToColoredJson;
 use reqwest::{
     header::{HeaderMap, HeaderValue},
-    Request, Response,
+    Request, StatusCode,
 };
 
 fn log_headers(headers: &HeaderMap<HeaderValue>) -> Result<()> {
@@ -21,7 +21,7 @@ fn log_headers(headers: &HeaderMap<HeaderValue>) -> Result<()> {
     Ok(())
 }
 
-pub fn log_request(req: Request, verbose: bool) -> Result<()> {
+pub fn log_request(req: &Request, verbose: bool) -> Result<()> {
     if !verbose {
         return Ok(());
     }
@@ -31,14 +31,17 @@ pub fn log_request(req: Request, verbose: bool) -> Result<()> {
     log_headers(req.headers())
 }
 
-pub async fn log_response(res: Response, verbose: bool) -> Result<()> {
+pub async fn log_response(
+    status: &StatusCode,
+    headers: &HeaderMap,
+    body: &str,
+    verbose: bool,
+) -> Result<()> {
     if verbose {
-        println!("Response Status: {:?}", res.status());
+        println!("Response Status: {:?}", status);
         println!("Response Headers:");
-        log_headers(res.headers())?;
+        log_headers(headers)?;
     }
-
-    let body = res.text().await?;
 
     println!("Response Body:");
     match body.to_colored_json_auto() {

@@ -8,13 +8,17 @@ use crate::{http::HttpClient, logger};
 
 #[async_trait]
 pub trait HttpClientRunner {
-    async fn run_http_client(client: HttpClient, verbose: bool) -> Result<()> {
+    async fn run_http_client(client: HttpClient, verbose: bool) -> Result<String> {
         let (req, res) = client.send().await?;
 
-        logger::log_request(req, verbose)?;
-        logger::log_response(res, verbose).await?;
+        logger::log_request(&req, verbose)?;
 
-        Ok(())
+        let status = res.status();
+        let headers = res.headers().clone();
+        let response_body = res.text().await?;
+        logger::log_response(&status, &headers, &response_body, verbose).await?;
+
+        Ok(response_body)
     }
 }
 

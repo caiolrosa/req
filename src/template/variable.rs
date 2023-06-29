@@ -73,14 +73,44 @@ impl Variable {
     }
 
     pub fn update_from_template_string(&mut self, template_string: &str) -> Result<()> {
-        let template_variables =
+        let input_variables =
             Self::get_variables_from_string(Self::input_variable_regex(), template_string);
 
-        for var in template_variables {
+        let output_variables =
+            Self::get_variables_from_string(Self::output_variable_regex(), template_string);
+
+        let variables: Vec<String> = [input_variables, output_variables]
+            .into_iter()
+            .flatten()
+            .collect();
+
+        for var in variables {
             if self.contents.get(&var).is_none() {
                 self.contents
                     .insert(var.to_string(), Value::String("".into()));
             }
+        }
+
+        self.save()
+    }
+
+    pub fn update_from_response_body(&mut self, response_body: &str) -> Result<()> {
+        let response_json: Value = serde_json::from_str(response_body)?;
+        for (out_var, out_value) in self.contents.iter_mut() {
+            if !out_var.starts_with("out:") {
+                continue;
+            };
+
+            let value = out_var
+                .strip_prefix("out:")
+                .ok_or(anyhow!("Invalid output variable declaration"))?
+                .split('.')
+                .fold(&response_json, |acc, path_item| &acc[path_item]);
+
+            match value {
+                Value::Null | Value::Array(_) | Value::Object(_) => continue,
+                _ => *out_value = value.clone(),
+            };
         }
 
         self.save()
@@ -150,8 +180,13 @@ impl Variable {
         Regex::new(r"\{\{[\w_-]+\}\}").expect("Failed building template input variable regex")
     }
 
+    fn output_variable_regex() -> Regex {
+        Regex::new(r"\{\{(out:){0,1}[\w\._-]+\}\}")
+            .expect("Failed building template output variable regex")
+    }
+
     fn any_variable_regex() -> Regex {
-        Regex::new(r"\{\{(gen:){0,1}[\w_-]+\}\}")
+        Regex::new(r"\{\{(gen:){0,1}(out:){0,1}[\w\._-]+\}\}")
             .expect("Failed building template generated variable regex")
     }
 }

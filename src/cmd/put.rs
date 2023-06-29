@@ -31,6 +31,8 @@ impl CommandHandler for PutCommandHandler {
         client = self.header_config.config_http_client(client)?;
         client = self.body_config.config_http_client(client)?;
 
-        Self::run_http_client(client, self.header_config.verbose).await
+        Self::run_http_client(client, self.header_config.verbose).await?;
+
+        Ok(())
     }
 }

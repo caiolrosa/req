@@ -46,6 +46,10 @@ impl CommandHandler for RunCommandHandler {
             client = client.with_headers_from_hash(request.headers);
         }
 
-        Self::run_http_client(client, self.header_config.verbose).await
+        let response_string = Self::run_http_client(client, self.header_config.verbose).await?;
+
+        template
+            .project
+            .update_variables_from_response_body(&response_string)
     }
 }

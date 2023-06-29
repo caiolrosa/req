@@ -93,6 +93,16 @@ impl Project {
         Ok(())
     }
 
+    pub fn update_variables_from_response_body(&mut self, response_body: &str) -> Result<()> {
+        self.load_variables()?;
+
+        for var in &mut self.variables {
+            var.update_from_response_body(response_body)?;
+        }
+
+        Ok(())
+    }
+
     fn load_variables(&mut self) -> Result<()> {
         let path = self.variables_path();
         self.variables = fs::read_dir(path)?
