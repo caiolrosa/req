@@ -105,7 +105,15 @@ impl Variable {
                 .strip_prefix("out:")
                 .ok_or(anyhow!("Invalid output variable declaration"))?
                 .split('.')
-                .fold(&response_json, |acc, path_item| &acc[path_item]);
+                .fold(&response_json, |acc, path_item| {
+                    if acc.is_array() {
+                        if let Ok(n) = path_item.parse::<usize>() {
+                            return &acc[n];
+                        }
+                    }
+
+                    &acc[path_item]
+                });
 
             match value {
                 Value::Null | Value::Array(_) | Value::Object(_) => continue,
