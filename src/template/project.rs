@@ -19,6 +19,14 @@ impl Project {
         Ok(project)
     }
 
+    pub fn get(project_name: &str) -> Result<Self> {
+        let project = Self::new(project_name.to_string())?;
+
+        project.path.try_exists()?;
+
+        Ok(project)
+    }
+
     pub fn list() -> Result<Vec<Self>> {
         let path = Self::project_path()?;
 
@@ -55,10 +63,12 @@ impl Project {
         Ok(self)
     }
 
-    pub fn select_variable(&mut self, index: usize) -> Result<&mut Self> {
-        if !(0..self.variables.len()).contains(&index) {
-            return Err(anyhow!("Invalid selected variable index"));
-        }
+    pub fn select_variable(&mut self, variable_name: &str) -> Result<&mut Self> {
+        let index = self
+            .variables()?
+            .iter()
+            .position(|v| v.name == variable_name)
+            .ok_or(anyhow!("Variable not found"))?;
 
         self.current_variable_index = Some(index);
 

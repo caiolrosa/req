@@ -1,37 +1,46 @@
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use clap::Parser;
 
-use crate::cmd::CommandHandler;
-
-use super::{ProjectSelector, TemplateSelector, VariableSelector};
+use crate::{
+    cmd::CommandHandler,
+    template::{project::Project, Template},
+};
 
 #[derive(Parser)]
 #[command(about = "Edit a request template")]
 pub struct EditCommandHandler {
-    #[arg(long = "variables", help = "Edit the project variables")]
-    edit_variables: bool,
-}
+    project: String,
+    template: Option<String>,
 
-impl ProjectSelector for EditCommandHandler {}
-impl TemplateSelector for EditCommandHandler {}
-impl VariableSelector for EditCommandHandler {}
+    #[arg(long = "variable", help = "Edit the project variable")]
+    variable: Option<String>,
+}
 
 #[async_trait]
 impl CommandHandler for EditCommandHandler {
     async fn handle(&self) -> Result<()> {
-        let mut project = Self::select_project(false)?;
-        if self.edit_variables {
-            Self::select_variable(&mut project, false)?;
-            project.current_variable()?.edit()?.save()?;
+        let mut project = Project::get(&self.project)?;
+        if let Some(variable) = &self.variable {
+            project
+                .select_variable(&variable)?
+                .current_variable()?
+                .edit()?
+                .save()?;
+
             println!(
-                "Variables edited successfully for project {}",
-                &project.name
+                "Variable {} edited successfully for project {}",
+                &project.name, &variable
             );
+
             return Ok(());
         }
 
-        let mut template = Self::select_template(project)?;
+        let template_name = self
+            .template
+            .as_ref()
+            .ok_or(anyhow!("Template name must be provided for editting."))?;
+        let mut template = Template::get(project, &template_name)?;
         let template = template.edit()?.save()?;
 
         println!(

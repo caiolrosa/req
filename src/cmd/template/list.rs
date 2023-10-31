@@ -7,25 +7,22 @@ use crate::{
     template::{project::Project, Template},
 };
 
-use super::ProjectSelector;
-
 #[derive(Parser)]
 #[command(about = "List request templates and projects")]
 pub struct ListCommandHandler {
-    #[arg(long = "projects", help = "List projects")]
-    list_projects: bool,
+    project: Option<String>,
 
     #[arg(long = "variables", help = "List variables")]
     list_variables: bool,
 }
 
-impl ProjectSelector for ListCommandHandler {}
-
 #[async_trait]
 impl CommandHandler for ListCommandHandler {
     async fn handle(&self) -> Result<()> {
-        if self.list_projects {
+        if self.project.is_none() {
             let projects = Project::list()?;
+
+            println!("Projects:\n");
             projects
                 .iter()
                 .for_each(|project| println!("{}", project.name));
@@ -33,8 +30,9 @@ impl CommandHandler for ListCommandHandler {
             return Ok(());
         }
 
-        let mut project = Self::select_project(false)?;
+        let mut project = Project::get(self.project.as_ref().unwrap())?;
         if self.list_variables {
+            println!("Variables:\n");
             project
                 .variables()?
                 .iter()
@@ -43,6 +41,7 @@ impl CommandHandler for ListCommandHandler {
             return Ok(());
         }
 
+        println!("Templates:\n");
         Template::list(&project)?
             .iter()
             .for_each(|template| println!("{}", template));

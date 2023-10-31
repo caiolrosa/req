@@ -5,32 +5,31 @@ use clap::Parser;
 use crate::{
     cmd::CommandHandler,
     http::{HttpClient, Method},
+    template::{project::Project, Template},
 };
 
-use super::{
-    shared::{HeaderConfigArgs, HttpClientRunner},
-    template::{ProjectSelector, TemplateSelector, VariableSelector},
-};
+use super::shared::{HeaderConfigArgs, HttpClientRunner};
 
 #[derive(Parser)]
 #[command(about = "Run request from a template")]
 pub struct RunCommandHandler {
+    project: String,
+    variable: String,
+    template: String,
+
     #[command(flatten)]
     header_config: HeaderConfigArgs,
 }
 
-impl ProjectSelector for RunCommandHandler {}
-impl TemplateSelector for RunCommandHandler {}
-impl VariableSelector for RunCommandHandler {}
 impl HttpClientRunner for RunCommandHandler {}
 
 #[async_trait]
 impl CommandHandler for RunCommandHandler {
     async fn handle(&self) -> Result<()> {
-        let mut project = Self::select_project(false)?;
-        Self::select_variable(&mut project, false)?;
+        let mut project = Project::get(&self.project)?;
+        project.select_variable(&self.variable)?;
 
-        let mut template = Self::select_template(project)?;
+        let mut template = Template::get(project, &self.template)?;
 
         let request = template.request_with_variables()?;
 

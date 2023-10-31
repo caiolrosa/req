@@ -52,6 +52,19 @@ impl Template {
         Ok(template)
     }
 
+    pub fn get(project: Project, template_name: &str) -> Result<Self> {
+        let mut template = Self::new(project, template_name);
+
+        template.path.try_exists()?;
+
+        let json = fs::read_to_string(&template.path)?;
+        let request: TemplateRequest = serde_json::from_str(&json)?;
+
+        template.request = request;
+
+        Ok(template)
+    }
+
     pub fn list(project: &Project) -> Result<Vec<String>> {
         let mut template_names = vec![];
         for file in fs::read_dir(&project.path)?.flatten() {
@@ -69,17 +82,6 @@ impl Template {
         }
 
         Ok(template_names)
-    }
-
-    pub fn load(project: Project, template_name: &str) -> Result<Self> {
-        let path = project.path.join(format!("{template_name}.json"));
-        let json = fs::read_to_string(path)?;
-        let request: TemplateRequest = serde_json::from_str(&json)?;
-
-        let mut template = Self::new(project, template_name);
-        template.request = request;
-
-        Ok(template)
     }
 
     pub fn save(&mut self) -> Result<&mut Self> {

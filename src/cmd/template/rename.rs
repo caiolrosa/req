@@ -1,35 +1,30 @@
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use clap::Parser;
-use dialoguer::{theme::ColorfulTheme, Input};
 
-use crate::cmd::CommandHandler;
-
-use super::{ProjectSelector, TemplateSelector};
+use crate::{
+    cmd::CommandHandler,
+    template::{project::Project, Template},
+};
 
 #[derive(Parser)]
 #[command(about = "Rename request template or project")]
 pub struct RenameCommandHandler {
-    #[arg(long = "project", help = "Rename project")]
-    rename_project: bool,
-}
+    project: String,
+    template: String,
+    new_template: Option<String>,
 
-impl ProjectSelector for RenameCommandHandler {}
-impl TemplateSelector for RenameCommandHandler {}
+    #[arg(long = "project", help = "New project name")]
+    new_project: Option<String>,
+}
 
 #[async_trait]
 impl CommandHandler for RenameCommandHandler {
     async fn handle(&self) -> Result<()> {
-        let theme = ColorfulTheme::default();
-
-        let mut project = Self::select_project(false)?;
+        let mut project = Project::get(&self.project)?;
         let old_project_name = project.name.to_string();
-        if self.rename_project {
-            let new_project_name: String = Input::with_theme(&theme)
-                .with_prompt("New project name")
-                .interact_text()?;
-
-            let new_project = project.rename(new_project_name)?;
+        if let Some(new_project) = &self.new_project {
+            let new_project = project.rename(new_project.to_string())?;
 
             println!(
                 "Project renamed from {} to {}",
@@ -39,13 +34,14 @@ impl CommandHandler for RenameCommandHandler {
             return Ok(());
         }
 
-        let mut template = Self::select_template(project)?;
+        let mut template = Template::get(project, &self.template)?;
         let old_template_name = template.name.to_string();
-        let new_template_name: String = Input::with_theme(&theme)
-            .with_prompt("New template name")
-            .interact_text()?;
 
-        let new_template = template.rename(&new_template_name)?;
+        let new_template_name = self
+            .new_template
+            .as_ref()
+            .ok_or(anyhow!("New template name is required for renaming"))?;
+        let new_template = template.rename(new_template_name)?;
 
         println!(
             "Template renamed from {} to {}",
