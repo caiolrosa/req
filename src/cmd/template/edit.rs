@@ -23,7 +23,7 @@ impl CommandHandler for EditCommandHandler {
         let mut project = Project::get(&self.project)?;
         if let Some(variable) = &self.variable {
             project
-                .select_variable(&variable)?
+                .select_variable(variable)?
                 .current_variable()?
                 .edit()?
                 .save()?;
@@ -40,7 +40,7 @@ impl CommandHandler for EditCommandHandler {
             .template
             .as_ref()
             .ok_or(anyhow!("Template name must be provided for editting."))?;
-        let mut template = Template::get(project, &template_name)?;
+        let mut template = Template::get(project, template_name)?;
         let template = template.edit()?.save()?;
 
         println!(

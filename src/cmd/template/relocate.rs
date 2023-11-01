@@ -28,7 +28,7 @@ impl CommandHandler for RelocateCommandHandler {
         let new_project = Project::get(&self.new_project)?;
         let new_template_name = self.new_template.as_ref().unwrap_or(&old_template_name);
 
-        template.relocate(new_project, &new_template_name)?;
+        template.relocate(new_project, new_template_name)?;
 
         println!(
             "Template moved from {} to {}",

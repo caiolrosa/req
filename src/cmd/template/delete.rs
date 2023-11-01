@@ -34,7 +34,7 @@ impl CommandHandler for DeleteCommandHandler {
             .template
             .as_ref()
             .ok_or(anyhow!("Template name must be provided for deletion"))?;
-        let template = Template::get(project, &template_name)?;
+        let template = Template::get(project, template_name)?;
 
         template.delete()?;
         println!("Template {} delete successfully", template_name);
